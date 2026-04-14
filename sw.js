@@ -1,9 +1,9 @@
-const CACHE_NAME = "barla-store-v18.2";
+const CACHE_NAME = "barla-store-v18.3";
 const urlsToCache = [
   "./",
   "./index.html",
   "./manifest.json",
-  "./icon.png"
+  "./icon.jpg"
 ];
 
 self.addEventListener("install", event => {

@@ -14,7 +14,6 @@
         body { font-family: "Segoe UI", sans-serif; background: #131314; color: #ffffff; -webkit-tap-highlight-color: transparent; }
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         
-        /* FORMAT PRINTER THERMAL - ASLI */
         @media print {
             body * { display: none !important; }
             #areaStruk, #areaStruk * { display: block !important; visibility: visible !important; }
@@ -34,7 +33,6 @@
         .sheet-active .sheet-content { transform: translateY(0); }
         .modal-bg { background: rgba(0, 0, 0, 0.9); z-index: 1200; position: fixed; inset: 0; display: none; align-items: center; justify-content: center; padding: 20px; }
         
-        /* Navigasi Bawah Custom: Hanya ikon putih saat aktif */
         .nav-btn { transition: all 0.2s; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; background: transparent; border: none; }
         .nav-btn i { font-size: 15px; color: #6b7280; transition: color 0.2s; } 
         .nav-btn span { font-size: 9px; font-weight: 700; text-transform: uppercase; color: #6b7280; } 
@@ -49,7 +47,6 @@
         #qr-shaded-region { display: none !important; }
         #scanner-modal-layer video { object-fit: cover !important; }
         
-        /* Kolom Input: Background Gemini, Border Abu-abu Seragam, Teks Putih */
         input { background-color: #131314 !important; color: #ffffff !important; border: 1px solid #4b5563 !important; }
         input::placeholder { color: #94a3b8 !important; }
     </style>
@@ -66,9 +63,9 @@
                 <button onclick="bukaHistory()" class="active:scale-75 transition"><i class="fas fa-history text-[18px] text-white"></i></button>
                 <button onclick="bukaKameraPopup('auto')" class="active:scale-75 transition"><div class="premium-scan w-7 h-7 border-2 border-white"></div></button>
             </div>
-            <div id="h-stok" class="hidden gap-4">
-                <button onclick="exportData()" class="text-green-400 flex flex-col items-center"><i class="fas fa-file-export text-base"></i><span class="text-[7px] font-bold mt-0.5 uppercase">Save</span></button>
-                <button onclick="document.getElementById('fIn').click()" class="text-[#3b82f6] flex flex-col items-center"><i class="fas fa-file-import text-base"></i><span class="text-[7px] font-bold mt-0.5 uppercase">Load</span></button>
+            <div id="h-stok" class="hidden flex gap-4">
+                <button onclick="exportData()" class="text-[#25D366] flex flex-col items-center"><i class="fas fa-file-export text-lg"></i><span class="text-[7px] font-bold mt-0.5 uppercase">Save</span></button>
+                <button onclick="document.getElementById('fIn').click()" class="text-[#3b82f6] flex flex-col items-center"><i class="fas fa-file-import text-lg"></i><span class="text-[7px] font-bold mt-0.5 uppercase">Load</span></button>
                 <input type="file" id="fIn" class="hidden" accept=".csv, .xlsx, .xls" onchange="importData(this)">
             </div>
         </div>
@@ -87,14 +84,14 @@
                 <div class="flex gap-2 mb-2">
                     <div class="relative flex-1">
                         <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-white text-xs z-10"></i>
-                        <input type="text" id="k-nama" list="db-list" oninput="handleInputNama(this)" placeholder="Nama Barang / Scan..." class="w-full pl-8 pr-9 py-2 rounded-lg font-bold text-xs outline-none focus:border-[#3b82f6] transition-all">
+                        <input type="text" id="k-nama" list="db-list" oninput="handleInputNama(this)" placeholder="Nama Barang / Scan..." class="w-full pl-8 pr-9 py-2 rounded-lg font-bold text-xs outline-none transition-all">
                         <button onclick="clearKasir()" class="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex justify-center items-center text-[#ff0000] rounded-full transition z-10"><i class="fas fa-times text-sm"></i></button>
                         <datalist id="db-list"></datalist>
                     </div>
                 </div>
                 <div class="flex gap-2">
-                    <div class="relative w-2/5"><span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[9px] font-black text-white z-10">Rp</span><input type="text" id="k-harga" inputmode="numeric" oninput="formatRupiah(this)" placeholder="Harga" class="w-full pl-7 pr-2 py-2 rounded-lg font-bold text-xs outline-none focus:border-[#3b82f6] transition-all"></div>
-                    <input type="number" id="k-qty" inputmode="numeric" placeholder="Qty" class="w-1/5 px-1 py-2 rounded-lg font-bold text-xs text-center outline-none focus:border-[#3b82f6] transition-all">
+                    <div class="relative w-2/5"><span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[9px] font-black text-white z-10">Rp</span><input type="text" id="k-harga" inputmode="numeric" oninput="formatRupiah(this)" placeholder="Harga" class="w-full pl-7 pr-2 py-2 rounded-lg font-bold text-xs outline-none transition-all"></div>
+                    <input type="number" id="k-qty" inputmode="numeric" placeholder="Qty" class="w-1/5 px-1 py-2 rounded-lg font-bold text-xs text-center outline-none transition-all">
                     <button onclick="tambahItem()" class="w-2/5 bg-[#3b82f6] hover:opacity-80 text-white font-bold text-xs rounded-lg shadow-sm active:scale-95 transition flex items-center justify-center gap-1"><i class="fas fa-plus"></i> ADD</button>
                 </div>
             </div>
@@ -136,12 +133,12 @@
     <div id="a-sheet" class="sheet-bg" onclick="closeSheet(event)"><div class="sheet-content border-t border-[#2b2d31]"><div id="sheet-opts" class="grid gap-3"></div></div></div>
     
     <div id="b-modal" class="modal-bg z-[1300]">
-        <div class="bg-[#1e1f22] w-full max-w-xs rounded-3xl p-6 shadow-2xl space-y-4 border-t-[8px] border-[#3b82f6]">
+        <div class="bg-[#1e1f22] w-full max-w-xs rounded-3xl p-6 shadow-2xl space-y-4 border-t-[8px] border-[#3b82f6]" id="m-border">
             <h3 id="m-title" class="font-black text-white text-center uppercase text-lg italic"></h3>
             <p id="m-desc" class="text-[11px] text-white font-bold text-center uppercase whitespace-pre-wrap"></p>
             <div id="m-input-box" style="display:none;" class="flex gap-2">
-                <input type="text" id="m-input" class="flex-1 p-3 rounded-xl text-center text-xl font-black outline-none focus:border-[#3b82f6]">
-                <button id="m-scan-btn" style="display:none;" class="w-12 bg-[#2b2d31] border border-[#ffffff] rounded-xl text-white flex items-center justify-center active:scale-90 transition"><i class="fas fa-barcode"></i></button>
+                <input type="text" id="m-input" class="flex-1 p-3 rounded-xl text-center text-xl font-black outline-none">
+                <button id="m-scan-btn" style="display:none;" class="w-12 bg-transparent border border-[#3b82f6] rounded-xl text-white flex items-center justify-center active:scale-90 transition"><i class="fas fa-barcode"></i></button>
             </div>
             <div class="flex gap-2 pt-1">
                 <button id="m-cancel" onclick="closeModal()" style="display:none;" class="flex-1 py-3 text-xs font-black text-white uppercase rounded-xl hover:bg-[#2b2d31] transition">Batal</button>
@@ -193,7 +190,7 @@
         function saveData() { localStorage.setItem(KEY, JSON.stringify(db)); localStorage.setItem('BARLA_CART', JSON.stringify(cart)); refreshDL(); if (!document.getElementById('section-stok').classList.contains('hidden')) renderStok(curTab); }
         function formatRupiah(el) { let v = el.value.replace(/[^0-9]/g, ""); el.value = v ? new Intl.NumberFormat('id-ID').format(v) : ""; if (el.id === 'i-bayar') updateChange(); }
         function clean(s) { return parseInt(s.toString().replace(/[^0-9]/g, "")) || 0; }
-        function refreshClock() { const optD = { day: '2-digit', month: 'short', year: 'numeric' }; const optT = { hour: '2-digit', minute: '2-digit', hour12: false }; const now = new Date(); const tgl = now.toLocaleDateString('id-ID', optD); const jam = now.toLocaleTimeString('id-ID', optT).replace(/\./g, ':'); document.getElementById('h-time').innerHTML = `<span class="font-normal">${tgl}</span> | <span class="text-[#ff0000] font-black">${jam}</span>`; }
+        function refreshClock() { const optD = { day: '2-digit', month: 'short', year: 'numeric' }; const optT = { hour: '2-digit', minute: '2-digit', hour12: false }; const now = new Date(); const tgl = now.toLocaleDateString('id-ID', optD); const jam = now.toLocaleTimeString('id-ID', optT).replace(/\./g, ':'); document.getElementById('h-time').innerHTML = `<span class="text-white">${tgl}</span> <span class="text-[#ff0000] font-black ml-1">${jam}</span>`; }
         function getTglStr() { return new Date().toLocaleDateString('id-ID', {day: '2-digit', month: '2-digit', year: 'numeric'}); }
         function getJamStr() { return new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'}).replace(/\./g, ':'); }
 
@@ -365,7 +362,15 @@
             window.open(`https://wa.me/?text=${encodeURIComponent(m)}`);
         }
 
-        function mode(m) { openIdx = null; matikanKamera(); document.getElementById('section-kasir').classList.toggle('hidden', m!=='kasir'); document.getElementById('section-stok').classList.toggle('hidden', m!=='stok'); ['n-k','n-s'].forEach(id => document.getElementById(id).classList.toggle('active-nav', id===(m==='kasir'?'n-k':'n-s'))); if(m==='stok') tab(curTab); }
+        function mode(m) { 
+            openIdx = null; matikanKamera(); 
+            document.getElementById('section-kasir').classList.toggle('hidden', m!=='kasir'); 
+            document.getElementById('section-stok').classList.toggle('hidden', m!=='stok'); 
+            document.getElementById('h-kasir').classList.toggle('hidden', m!=='kasir');
+            document.getElementById('h-stok').classList.toggle('hidden', m!=='stok');
+            ['n-k','n-s'].forEach(id => document.getElementById(id).classList.toggle('active-nav', id===(m==='kasir'?'n-k':'n-s'))); 
+            if(m==='stok') tab(curTab); 
+        }
         function tab(t) { openIdx = null; matikanKamera(); curTab = t; ['sup','retur','lap'].forEach(id => document.getElementById('b-'+id).classList.toggle('tab-active', id===t)); document.getElementById('fab').style.display = (t==='sup')?'flex':'none'; renderStok(t); }
 
         function renderStok(t) {
@@ -375,7 +380,7 @@
                 else db.supplier.forEach((s, i) => {
                     let bl = ""; s.barang.forEach((b, bi) => bl += `<div class="flex justify-between items-center py-2.5 border-b border-[#2b2d31] border-dashed"><div><b class="text-xs text-white">${escapeHTML(b.nama)}</b><br><span class="text-[#3b82f6] text-[10px]">Rp ${b.harga.toLocaleString('id-ID')} | <span class="text-[#94a3b8]">${escapeHTML(b.bc) || '-'}</span></span></div><div class="flex items-center gap-3"><b class="text-sm text-white">${b.stok}</b><button onclick="openSheet('sup', ${i}, ${bi})" class="text-white hover:text-white text-lg px-2">⋮</button></div></div>`);
                     c.innerHTML += `<div class="bg-[#1e1f22] rounded-2xl border border-[#2b2d31] p-4 mb-3 shadow-sm"><div class="flex justify-between" onclick="openIdx=(openIdx===${i}?null:${i});matikanKamera();renderStok('sup')"><b class="uppercase text-[#ffd700] text-sm">${escapeHTML(s.nama)}</b><button onclick="event.stopPropagation();openSheet('head', ${i})" class="text-white hover:text-white px-2 font-bold text-lg">⋮</button></div><div class="${openIdx===i?'':'hidden'} mt-3 space-y-2 relative">
-                        <div class="flex gap-2"><input id="ib-n-${i}" placeholder="NAMA BARANG" class="flex-1 p-3 rounded-xl text-xs outline-none"><button onclick="bukaKameraPopup('ib-bc-${i}')" class="active:scale-75 transition bg-[#2b2d31] rounded-xl px-2"><div class="premium-scan w-7 h-7 border-2 border-white"></div></button></div>
+                        <div class="flex gap-2"><input id="ib-n-${i}" placeholder="NAMA BARANG" class="flex-1 p-3 rounded-xl text-xs outline-none"><button onclick="bukaKameraPopup('ib-bc-${i}')" class="active:scale-75 transition bg-transparent border border-[#3b82f6] rounded-xl px-2"><div class="premium-scan w-7 h-7 border-2 border-white"></div></button></div>
                         <input id="ib-bc-${i}" inputmode="numeric" placeholder="BARCODE" class="w-full p-3 rounded-xl text-xs outline-none">
                         <div class="flex gap-2"><input id="ib-h-${i}" inputmode="numeric" oninput="formatRupiah(this)" placeholder="HARGA" class="w-1/2 p-3 rounded-xl text-xs outline-none"><input id="ib-s-${i}" inputmode="numeric" type="number" placeholder="STOK" class="w-1/2 p-3 rounded-xl text-xs outline-none"></div>
                         <button onclick="addB(${i})" class="w-full bg-[#3b82f6] hover:opacity-80 text-white py-3 rounded-xl font-bold uppercase text-xs shadow-md">Simpan Barang</button><div class="mt-2 border-t border-[#2b2d31] pt-1">${bl}</div></div></div>`;
@@ -383,10 +388,10 @@
             } else if (t === 'retur') {
                 const g = db.retur.reduce((a, r) => { (a[r.sup] = a[r.sup] || []); a[r.sup].push(r); return a; }, {});
                 if (Object.keys(g).length === 0) c.innerHTML = "<div class='text-center py-20 font-black text-white'>KOSONG</div>";
-                else { c.innerHTML = `<button onclick="printReturSemua()" class="w-full bg-[#3b82f6] hover:opacity-80 text-white py-3 rounded-xl font-black text-xs uppercase mb-4 shadow-md">Print Semua Retur</button>`; for (let s in g) { let its = ""; g[s].forEach(r => its += `<div class="text-[11px] py-2 border-b border-[#2b2d31] border-dashed flex justify-between items-center text-white"><span>• ${escapeHTML(r.nama)}</span><b>${r.qty} Pcs</b></div>`); c.innerHTML += `<div class="bg-[#1e1f22] p-4 rounded-2xl border border-[#2b2d31] mb-3 shadow-sm"><div class="flex justify-between items-center mb-2"><b class="uppercase text-[#ffd700] text-sm">${escapeHTML(s)}</b><button onclick="openSheet('retur', '${escapeHTML(s)}')" class="text-white hover:text-white text-lg px-2">⋮</button></div>${its}</div>`; } }
+                else { c.innerHTML = `<button onclick="printReturSemua()" class="w-full bg-[#3b82f6] hover:opacity-80 text-white py-3 rounded-xl font-black text-xs uppercase mb-4 shadow-md">Print Semua Retur</button>`; for (let s in g) { let its = ""; g[s].forEach(r => its += `<div class="text-[11px] py-2 border-b border-[#2b2d31] border-dashed flex justify-between items-start text-white"><span>• ${escapeHTML(r.nama)}</span><b class="text-[#ff0000]">${r.qty} Pcs</b></div>`); c.innerHTML += `<div class="bg-[#1e1f22] p-4 rounded-2xl border border-[#2b2d31] mb-3 shadow-sm"><div class="flex justify-between items-start mb-2"><b class="uppercase text-[#ffd700] text-sm">${escapeHTML(s)}</b><button onclick="openSheet('retur', '${escapeHTML(s)}')" class="text-white hover:text-white text-lg px-2">⋮</button></div>${its}</div>`; } }
             } else if (t === 'lap') {
                 let has = false; let lapH = `<button onclick="printLapSemua()" class="w-full bg-[#3b82f6] hover:opacity-80 text-white py-3 rounded-xl font-black text-xs uppercase mb-4 shadow-md">Print Laporan Stok</button>`;
-                db.supplier.forEach((s, i) => { let k = s.barang.filter(x => x.stok < 30); if (k.length > 0) { has = true; let bl = ""; k.forEach(b => bl += `<div class="text-[11px] py-2 border-b border-[#2b2d31] border-dashed flex justify-between items-center text-white"><span>• ${escapeHTML(b.nama)}</span><b class="text-[#ff0000]">${b.stok}</b></div>`); lapH += `<div class="bg-[#1e1f22] p-4 rounded-2xl border border-[#2b2d31] mb-3 shadow-sm"><div class="flex justify-between items-center mb-2"><b class="uppercase text-[#ffd700] text-sm">${escapeHTML(s.nama)}</b><button onclick="openSheet('lap', ${i})" class="text-white hover:text-white text-lg px-2">⋮</button></div>${bl}</div>`; } });
+                db.supplier.forEach((s, i) => { let k = s.barang.filter(x => x.stok < 30); if (k.length > 0) { has = true; let bl = ""; k.forEach(b => bl += `<div class="text-[11px] py-2 border-b border-[#2b2d31] border-dashed flex justify-between items-start text-white"><span>• ${escapeHTML(b.nama)}</span><b class="text-[#ff0000]">${b.stok}</b></div>`); lapH += `<div class="bg-[#1e1f22] p-4 rounded-2xl border border-[#2b2d31] mb-3 shadow-sm"><div class="flex justify-between items-start mb-2"><b class="uppercase text-[#ffd700] text-sm">${escapeHTML(s.nama)}</b><button onclick="openSheet('lap', ${i})" class="text-white hover:text-white text-lg px-2">⋮</button></div>${bl}</div>`; } });
                 c.innerHTML = has ? lapH : "<div class='text-center py-20 font-black text-white uppercase'>Stok Aman</div>";
             }
         }
@@ -414,7 +419,6 @@
 
         function editSupplier(i) { closeSheet(); let old = db.supplier[i].nama; openModal("EDIT SUPPLIER", old, "", (v) => { let n = v.trim(); if(!n||db.supplier.some(s=>s.nama.toUpperCase()===n.toUpperCase() && s.nama!==old)) return openModal("GAGAL","","Nama sudah ada!",null,"alert"); db.retur.forEach(r=>{if(r.sup===old) r.sup=n;}); db.supplier[i].nama = n; saveData(); }, "prompt"); }
         function openModalSup() { openModal("TAMBAH SUPPLIER", "", "", (v) => { if(v.trim()) { db.supplier.unshift({nama:v.trim(), barang:[]}); saveData(); } }, "prompt"); }
-        
         function delSup(n) { closeSheet(); openModal("HAPUS?", "", `Hapus Supplier ${n}?`, () => { db.retur=db.retur.filter(x=>x.sup!==n); db.supplier=db.supplier.filter(x=>x.nama!==n); openIdx=null; cart=[]; saveData(); }, "confirm"); }
         
         function addB(i) {
@@ -427,10 +431,11 @@
         }
 
         function openModal(t, v, d, cb, mode='alert', type='text', withScan=false) {
-            const m = document.getElementById('b-modal'), inpBox = document.getElementById('m-input-box'), inp = document.getElementById('m-input'), btnC = document.getElementById('m-cancel'), btnOk = document.getElementById('m-confirm'), btnS = document.getElementById('m-scan-btn');
+            const m = document.getElementById('b-modal'), inpBox = document.getElementById('m-input-box'), inp = document.getElementById('m-input'), btnC = document.getElementById('m-cancel'), btnOk = document.getElementById('m-confirm'), btnS = document.getElementById('m-scan-btn'), mBrd = document.getElementById('m-border');
             document.getElementById('m-title').innerText = t; document.getElementById('m-desc').innerText = d; inp.value = v; inp.inputMode = type==="numeric"?"numeric":"text";
             inpBox.style.display = (mode==='prompt')?'flex':'none'; btnC.style.display = (mode!=='alert')?'block':'none'; btnS.style.display = withScan?'block':'none';
-            btnOk.className = (t.includes("HAPUS?")||t.includes("GAGAL")) ? "flex-1 py-3 bg-[#ff0000] text-white rounded-xl text-xs font-black shadow-md uppercase active:scale-95 transition" : "flex-1 py-3 bg-[#3b82f6] text-white rounded-xl text-xs font-black shadow-md uppercase active:scale-95 transition";
+            if (t.includes("HAPUS?")) { btnOk.className = "flex-1 py-3 bg-[#ff0000] text-white rounded-xl text-xs font-black shadow-md uppercase active:scale-95 transition"; mBrd.style.borderTopColor = "#ff0000"; } 
+            else { btnOk.className = "flex-1 py-3 bg-[#3b82f6] text-white rounded-xl text-xs font-black shadow-sm uppercase active:scale-95 transition"; mBrd.style.borderTopColor = "#3b82f6"; }
             btnS.onclick = () => bukaKameraPopup('modal');
             btnOk.onclick = () => { if(cb) mode==='prompt'?cb(inp.value):cb(); closeModal(); };
             m.style.display = 'flex'; if(mode==='prompt') setTimeout(()=>inp.focus(),300);

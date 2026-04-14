@@ -136,9 +136,9 @@
         <div class="bg-[#1e1f22] w-full max-w-xs rounded-3xl p-6 shadow-2xl space-y-4 border-t-[8px]" id="m-border">
             <h3 id="m-title" class="font-black text-white text-center uppercase text-lg italic"></h3>
             <p id="m-desc" class="text-[11px] text-white font-bold text-center uppercase whitespace-pre-wrap"></p>
-            <div id="m-input-box" style="display:none;" class="flex gap-2">
-                <input type="text" id="m-input" class="flex-1 p-3 rounded-xl text-center text-xl font-black outline-none">
-                <button id="m-scan-btn" style="display:none;" class="w-12 bg-transparent rounded-xl text-white flex items-center justify-center active:scale-90 transition"><div class="premium-scan w-7 h-7 border-2 border-white"></div></button>
+            <div id="m-input-box" style="display:none;" class="flex gap-2 items-center bg-[#131314] p-1 rounded-xl border border-[#4b5563]">
+                <input type="text" id="m-input" oninput="handleModalInput(this)" class="flex-1 p-3 bg-transparent border-none rounded-xl text-center text-xl font-black outline-none !border-0">
+                <button id="m-scan-btn" style="display:none;" class="w-10 h-10 bg-transparent flex items-center justify-center active:scale-90 transition pr-2"><div class="premium-scan w-7 h-7 border border-white !rounded-md"></div></button>
             </div>
             <div class="flex gap-2 pt-1">
                 <button id="m-cancel" onclick="closeModal()" style="display:none;" class="flex-1 py-3 text-xs font-black text-white uppercase rounded-xl hover:bg-[#2b2d31] transition">Batal</button>
@@ -190,7 +190,16 @@
         function saveData() { localStorage.setItem(KEY, JSON.stringify(db)); localStorage.setItem('BARLA_CART', JSON.stringify(cart)); refreshDL(); if (!document.getElementById('section-stok').classList.contains('hidden')) renderStok(curTab); }
         function formatRupiah(el) { let v = el.value.replace(/[^0-9]/g, ""); el.value = v ? new Intl.NumberFormat('id-ID').format(v) : ""; if (el.id === 'i-bayar') updateChange(); }
         function clean(s) { return parseInt(s.toString().replace(/[^0-9]/g, "")) || 0; }
-        function refreshClock() { const optD = { day: '2-digit', month: 'short', year: 'numeric' }; const optT = { hour: '2-digit', minute: '2-digit', hour12: false }; const now = new Date(); const tgl = now.toLocaleDateString('id-ID', optD); const jam = now.toLocaleTimeString('id-ID', optT).replace(/\./g, ':'); document.getElementById('h-time').innerHTML = `<span class="text-white">${tgl}</span> <span class="text-[#ff0000] font-black ml-1">${jam}</span>`; }
+        
+        function refreshClock() { 
+            const optD = { day: '2-digit', month: 'short', year: 'numeric' }; 
+            const optT = { hour: '2-digit', minute: '2-digit', hour12: false }; 
+            const now = new Date(); 
+            const tgl = now.toLocaleDateString('id-ID', optD); 
+            const jam = now.toLocaleTimeString('id-ID', optT).replace(/\./g, ':'); 
+            document.getElementById('h-time').innerHTML = `<span class="text-white">${tgl}</span> <span class="text-[#ff0000] font-black ml-1">${jam}</span>`; 
+        }
+
         function getTglStr() { return new Date().toLocaleDateString('id-ID', {day: '2-digit', month: '2-digit', year: 'numeric'}); }
         function getJamStr() { return new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'}).replace(/\./g, ':'); }
 
@@ -236,6 +245,14 @@
             let found = null;
             db.supplier.forEach(s => s.barang.forEach(b => { if (b.nama.toUpperCase() === el.value.toUpperCase() || b.bc === el.value) { if (b.stok > 0) found = b; else if (!found) found = b; } }));
             if (found) { document.getElementById('k-harga').value = found.harga.toLocaleString('id-ID'); document.getElementById('k-qty').focus(); }
+        }
+
+        function handleModalInput(el) {
+            const title = document.getElementById('m-title').innerText;
+            if (title.includes("HARGA")) {
+                let v = el.value.replace(/[^0-9]/g, "");
+                el.value = v ? new Intl.NumberFormat('id-ID').format(v) : "";
+            }
         }
 
         function refreshDL() {
@@ -342,7 +359,13 @@
             document.getElementById('modal-history').style.display = 'flex';
         }
         function tutupHistory() { document.getElementById('modal-history').style.display = 'none'; }
-        function hapusHistory() { openModal("HAPUS?", "", "Bersihkan semua riwayat?", () => { db.history = []; saveData(); bukaHistory(); }, "confirm"); }
+        
+        function hapusHistory() { 
+            openModal("HAPUS?", "", "Bersihkan semua riwayat?", () => { 
+                db.history = []; saveData(); bukaHistory(); 
+            }, "confirm"); 
+        }
+
         function cetakUlang(id) {
             const trx = db.history.find(x => x.id === id); if (!trx) return;
             const [tgl, jam] = trx.waktu.split(' ');
@@ -376,7 +399,7 @@
                 else db.supplier.forEach((s, i) => {
                     let bl = ""; s.barang.forEach((b, bi) => bl += `<div class="flex justify-between items-center py-2.5 border-b border-[#2b2d31] border-dashed"><div><b class="text-xs text-white">${escapeHTML(b.nama)}</b><br><span class="text-[#3b82f6] text-[10px]">Rp ${b.harga.toLocaleString('id-ID')} | <span class="text-[#94a3b8]">${escapeHTML(b.bc) || '-'}</span></span></div><div class="flex items-center gap-3"><b class="text-sm text-white">${b.stok}</b><button onclick="openSheet('sup', ${i}, ${bi})" class="text-white hover:text-white text-lg px-2">⋮</button></div></div>`);
                     c.innerHTML += `<div class="bg-[#1e1f22] rounded-2xl border border-[#2b2d31] p-4 mb-3 shadow-sm"><div class="flex justify-between items-start" onclick="openIdx=(openIdx===${i}?null:${i});matikanKamera();renderStok('sup')"><b class="uppercase text-[#ffd700] text-sm leading-tight">${escapeHTML(s.nama)}</b><button onclick="event.stopPropagation();openSheet('head', ${i})" class="text-white hover:text-white px-2 font-bold text-lg leading-none">⋮</button></div><div class="${openIdx===i?'':'hidden'} mt-3 space-y-2 relative">
-                        <div class="flex gap-2"><input id="ib-n-${i}" placeholder="NAMA BARANG" class="flex-1 p-3 rounded-xl text-xs outline-none"><button onclick="bukaKameraPopup('ib-bc-${i}')" class="active:scale-75 transition bg-transparent rounded-xl px-2"><div class="premium-scan w-7 h-7 border-2 border-white"></div></button></div>
+                        <div class="flex gap-2"><input id="ib-n-${i}" placeholder="NAMA BARANG" class="flex-1 p-3 rounded-xl text-xs outline-none"><button onclick="bukaKameraPopup('ib-bc-${i}')" class="active:scale-75 transition bg-transparent border-0 rounded-xl px-2"><div class="premium-scan w-7 h-7 border-2 border-white"></div></button></div>
                         <input id="ib-bc-${i}" inputmode="numeric" placeholder="BARCODE" class="w-full p-3 rounded-xl text-xs outline-none">
                         <div class="flex gap-2"><input id="ib-h-${i}" inputmode="numeric" oninput="formatRupiah(this)" placeholder="HARGA" class="w-1/2 p-3 rounded-xl text-xs outline-none"><input id="ib-s-${i}" inputmode="numeric" type="number" placeholder="STOK" class="w-1/2 p-3 rounded-xl text-xs outline-none"></div>
                         <button onclick="addB(${i})" class="w-full bg-[#3b82f6] hover:opacity-80 text-white py-3 rounded-xl font-bold uppercase text-xs shadow-md">Simpan Barang</button><div class="mt-2 border-t border-[#2b2d31] pt-1">${bl}</div></div></div>`;
@@ -404,7 +427,7 @@
         function action(type) {
             closeSheet(); const brg = db.supplier[selS].barang[selB];
             if (type === 'stok') openModal("EDIT STOK", brg.stok.toString(), brg.nama, (v) => { db.supplier[selS].barang[selB].stok = Math.abs(parseInt(v))||0; cart=[]; saveData(); }, "prompt", "numeric");
-            if (type === 'harga') openModal("EDIT HARGA", brg.harga.toString(), brg.nama, (v) => { db.supplier[selS].barang[selB].harga = clean(v); cart=[]; saveData(); }, "prompt", "numeric");
+            if (type === 'harga') openModal("EDIT HARGA", brg.harga.toLocaleString('id-ID'), brg.nama, (v) => { db.supplier[selS].barang[selB].harga = clean(v); cart=[]; saveData(); }, "prompt", "numeric");
             if (type === 'barcode') openModal("EDIT BARCODE", brg.bc||"", brg.nama, (v) => { 
                 if(v && db.supplier.some(s=>s.barang.some(b=>b.bc===v.trim() && b.nama!==brg.nama))) return openModal("DUPLIKAT","","Barcode sudah dipakai!",null,"alert");
                 db.supplier[selS].barang[selB].bc = v.trim(); saveData(); 
@@ -428,11 +451,15 @@
 
         function openModal(t, v, d, cb, mode='alert', type='text', withScan=false) {
             const m = document.getElementById('b-modal'), inpBox = document.getElementById('m-input-box'), inp = document.getElementById('m-input'), btnC = document.getElementById('m-cancel'), btnOk = document.getElementById('m-confirm'), btnS = document.getElementById('m-scan-btn'), mBrd = document.getElementById('m-border');
-            document.getElementById('m-title').innerText = t; document.getElementById('m-desc').innerText = d; inp.value = v; inp.inputMode = type==="numeric"?"numeric":"text";
-            inpBox.style.display = (mode==='prompt')?'flex':'none'; btnC.style.display = (mode!=='alert')?'block':'none'; btnS.style.display = withScan?'block':'none';
+            document.getElementById('m-title').innerText = t; document.getElementById('m-desc').innerText = d; 
+            inp.value = v; 
+            inp.inputMode = type==="numeric"?"numeric":"text";
+            inpBox.style.display = (mode==='prompt')?'flex':'none'; 
+            btnC.style.display = (mode!=='alert')?'block':'none'; 
+            btnS.style.display = withScan?'flex':'none';
             if (t.includes("HAPUS?")) { btnOk.className = "flex-1 py-3 bg-[#ff0000] text-white rounded-xl text-xs font-black shadow-md uppercase active:scale-95 transition"; mBrd.style.borderTopColor = "#ff0000"; } 
             else if (t.includes("RETUR")) { btnOk.className = "flex-1 py-3 bg-[#facc15] text-black rounded-xl text-xs font-black shadow-md uppercase active:scale-95 transition"; mBrd.style.borderTopColor = "#facc15"; }
-            else if (t.includes("EDIT BARCODE")) { btnOk.className = "flex-1 py-3 bg-[#ffffff] text-black rounded-xl text-xs font-black shadow-md uppercase active:scale-95 transition"; mBrd.style.borderTopColor = "#ffffff"; }
+            else if (t.includes("EDIT BARCODE") || t.includes("EDIT HARGA")) { btnOk.className = "flex-1 py-3 bg-[#ffffff] text-black rounded-xl text-xs font-black shadow-md uppercase active:scale-95 transition"; mBrd.style.borderTopColor = "#ffffff"; }
             else { btnOk.className = "flex-1 py-3 bg-[#3b82f6] text-white rounded-xl text-xs font-black shadow-sm uppercase active:scale-95 transition"; mBrd.style.borderTopColor = "#3b82f6"; }
             btnS.onclick = () => bukaKameraPopup('modal');
             btnOk.onclick = () => { if(cb) mode==='prompt'?cb(inp.value):cb(); closeModal(); };

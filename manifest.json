@@ -8,15 +8,9 @@
   "theme_color": "#1e3a8a",
   "icons": [
     {
-      "src": "./ikon-barcode.jpg",
-      "sizes": "192x192",
-      "type": "image/jpeg",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "./ikon-barcode.jpg",
+      "src": "https://cdn-icons-png.flaticon.com/512/4300/4300058.png",
       "sizes": "512x512",
-      "type": "image/jpeg",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]

@@ -1,16 +1,17 @@
 {
-  "name": "BARLA STORE PREMIUM",
-  "short_name": "BARLA STORE",
-  "description": "Aplikasi Kasir dan Manajemen Stok BARLA STORE",
+  "name": "KASIR BARLA STORE",
+  "short_name": "KASIR",
+  "description": "Aplikasi Kasir Profesional BARLA STORE",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#f8fafc",
+  "background_color": "#1e3a8a",
   "theme_color": "#1e3a8a",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/3081/3081840.png",
+      "src": "./ikon-barcode.jpg",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/jpeg",
+      "purpose": "any maskable"
     }
   ]
 }

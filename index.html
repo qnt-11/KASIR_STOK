@@ -164,7 +164,6 @@
                 const savedCart = localStorage.getItem('BARLA_CART');
                 if (savedCart) cart = JSON.parse(savedCart);
             } catch(e) { db = { supplier: [], retur: [], history: [] }; }
-            // RAKIT MESIN KAMERA SEKALI DI AWAL
             html5QrCode = new Html5Qrcode("scanner-modal-layer");
             refreshClock(); setInterval(refreshClock, 60000); refreshDL(); renderStok('sup'); renderCart();
             setupScannerEvents();
@@ -191,7 +190,6 @@
         function getTglStr() { return new Date().toLocaleDateString('id-ID', {day: '2-digit', month: '2-digit', year: 'numeric'}); }
         function getJamStr() { return new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'}).replace(/\./g, ':'); }
 
-        // --- SISTEM KAMERA POPUP ANTI MACET ---
         async function matikanKamera() {
             if (isScanning && html5QrCode) {
                 try {
@@ -228,7 +226,6 @@
             } catch (err) { matikanKamera(); openModal("GAGAL", "", "Kamera Error / Izin Ditolak.", null, "alert"); }
         }
 
-        // --- KASIR LOGIC ---
         function handleInputNama(el) {
             let val = el.value; if (!val) { document.getElementById('k-harga').value = ""; return; }
             el.value = val.split(' ').map(w => /^(PVC|SNI|P\/C)$/i.test(w) ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
@@ -315,7 +312,6 @@
             if (cart.length === 0) { openModal("KOSONG", "", "Keranjang masih kosong!", null, "alert"); return; }
             if (b < t) { openModal("KURANG", "", `Kurang: Rp ${(t-b).toLocaleString('id-ID')}`, null, "alert"); return; }
             
-            // CEK SINKRONISASI AKHIR
             for (let c of cart) {
                 let sT = 0; db.supplier.forEach(s => s.barang.forEach(brg => { if(brg.nama.toUpperCase() === c.nama.toUpperCase() && brg.harga === c.harga) sT += brg.stok; }));
                 if (c.qty > sT) { openModal("BERUBAH", "", `Stok ${c.nama} berubah! Harap cek ulang.`, () => { cart = []; saveData(); renderCart(); }, "alert"); return; }
@@ -335,7 +331,6 @@
             cart = []; document.getElementById('i-bayar').value = ""; saveData(); renderCart(); refreshDL();
         }
 
-        // --- HISTORY & SYNC LOGIC ---
         function bukaHistory() {
             matikanKamera(); const list = document.getElementById('history-content'); list.innerHTML = '';
             if (db.history.length === 0) list.innerHTML = `<div class='text-center py-10 font-bold text-slate-400'>BELUM ADA RIWAYAT</div>`;
@@ -363,7 +358,6 @@
             window.open(`https://wa.me/?text=${encodeURIComponent(m)}`);
         }
 
-        // --- STOK & SUPPLIER LOGIC ---
         function mode(m) { openIdx = null; matikanKamera(); document.getElementById('section-kasir').classList.toggle('hidden', m!=='kasir'); document.getElementById('section-stok').classList.toggle('hidden', m!=='stok'); ['n-k','n-s'].forEach(id => document.getElementById(id).classList.toggle('active-nav', id===(m==='kasir'?'n-k':'n-s'))); if(m==='stok') tab(curTab); }
         function tab(t) { openIdx = null; matikanKamera(); curTab = t; ['sup','retur','lap'].forEach(id => document.getElementById('b-'+id).classList.toggle('tab-active', id===t)); document.getElementById('fab').style.display = (t==='sup')?'flex':'none'; renderStok(t); }
 
@@ -423,7 +417,6 @@
             document.querySelectorAll(`[id^='ib-']`).forEach(inp => inp.value="");
         }
 
-        // --- SISTEM MODAL PINTAR ---
         function openModal(t, v, d, cb, mode='alert', type='text', withScan=false) {
             const m = document.getElementById('b-modal'), inpBox = document.getElementById('m-input-box'), inp = document.getElementById('m-input'), btnC = document.getElementById('m-cancel'), btnOk = document.getElementById('m-confirm'), btnS = document.getElementById('m-scan-btn');
             document.getElementById('m-title').innerText = t; document.getElementById('m-desc').innerText = d; inp.value = v; inp.inputMode = type==="numeric"?"numeric":"text";
@@ -435,7 +428,6 @@
         }
         function closeModal() { document.getElementById('b-modal').style.display = 'none'; }
 
-        // --- IMPORT / EXPORT DATA ---
         function exportData() { let d = []; db.supplier.forEach(s=>s.barang.forEach(b=>d.push({"Supplier":s.nama,"Barang":b.nama,"Barcode":b.bc||"","Harga":b.harga,"Stok":b.stok}))); const ws = XLSX.utils.json_to_sheet(d); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Stok"); XLSX.writeFile(wb, "STOK_BARLA.xlsx"); }
         function importData(input) {
             if(!input.files[0]) return; const reader = new FileReader(); reader.readAsArrayBuffer(input.files[0]);
@@ -455,13 +447,22 @@
             };
         }
 
-        // --- PRINTING LOGIC ---
         function printReturSemua() { let h = `<div class="text-center bold" style="font-size:11pt">RETUR SEMUA</div><div class="text-center">(${getTglStr()})</div><br>`; const g = db.retur.reduce((a,r)=>{(a[r.sup]=a[r.sup]||[]);a[r.sup].push(r);return a;},{}); for(let s in g){ h += `<div class="bold uppercase mt-2">${escapeHTML(s)}</div><table>`; g[s].forEach(r=>h+=`<tr><td>• ${escapeHTML(r.nama)}</td><td class="text-right">${r.qty} pcs</td></tr>`); h+=`</table><br>`; } document.getElementById('p-konten').innerHTML = h; window.print(); }
         function printReturSup(sn) { let h = `<div class="text-center bold" style="font-size:11pt">RETUR: ${escapeHTML(sn)}</div><div class="text-center">(${getTglStr()})</div><br><table>`; db.retur.filter(x=>x.sup===sn).forEach(r=>h+=`<tr><td>• ${escapeHTML(r.nama)}</td><td class="text-right">${r.qty} pcs</td></tr>`); h+=`</table>`; document.getElementById('p-konten').innerHTML = h; window.print(); }
         function printLapSemua() { let h = `<div class="text-center bold" style="font-size:12pt">LAPORAN STOK TIPIS</div><div class="line"></div>`; let has = false; db.supplier.forEach(s=>{ const k=s.barang.filter(b=>b.stok<30); if(k.length>0){ has=true; h+=`<div class="bold uppercase mt-2">[ ${escapeHTML(s.nama)} ]</div><table>`; k.forEach(b=>h+=`<tr><td>• ${escapeHTML(b.nama)}</td><td class="text-right">Sisa: ${b.stok}</td></tr>`); h+=`</table><div class="line"></div>`; } }); if(!has) return openModal("AMAN","","Semua stok masih cukup.",null,"alert"); document.getElementById('p-konten').innerHTML=h; window.print(); }
         function waR(sn) { let m = `*RETUR BARANG*\n(${getTglStr()})\n\n*${sn.toUpperCase()}*\n`; db.retur.filter(x=>x.sup===sn).forEach(r=>m+=`• ${r.nama} : ${r.qty} pcs\n`); window.open(`https://wa.me/?text=${encodeURIComponent(m)}`); }
         function waO(i) { let s=db.supplier[i], m=`*ORDER*\n(${getTglStr()})\n\n*${s.nama.toUpperCase()}*\n`; s.barang.filter(b=>b.stok<30).forEach(b=>m+=`• ${b.nama} : \n`); window.open(`https://wa.me/?text=${encodeURIComponent(m)}`); }
         function trHR(sn) { openModal("HAPUS", "", `Data retur ${sn} dihapus?`, () => { db.retur=db.retur.filter(x=>x.sup!==sn); saveData(); renderStok('retur'); }, "confirm"); }
+    </script>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('Service Worker Registered!', reg))
+                .catch(err => console.error('Service Worker Failed!', err));
+            });
+        }
     </script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-const CACHE_NAME = "barla-store-v18.6";
+const CACHE_NAME = "barla-store-v18.8";
 const urlsToCache = [
   "./",
   "./index.html",

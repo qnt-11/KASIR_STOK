@@ -4,16 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#1e3a8a">
-    <title>BARLA STORE v17.9 PREMIUM</title>
+    <title>BARLA STORE v18.0 PREMIUM</title>
     <link rel="manifest" href="manifest.json">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         body { font-family: "Segoe UI", sans-serif; background: #f8fafc; color: #1e293b; -webkit-tap-highlight-color: transparent; }
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         
-        /* FORMAT PRINTER THERMAL - TIDAK DIUBAH */
+        /* FORMAT PRINTER THERMAL - ASLI & TIDAK DIUBAH */
         @media print {
             body * { display: none !important; }
             #areaStruk, #areaStruk * { display: block !important; visibility: visible !important; }
@@ -41,7 +43,7 @@
         .active-nav { color: #1e3a8a !important; background: #f1f5f9; border-top: 2px solid #1e3a8a; }
 
         /* Animasi Scanner Adaptif */
-        .premium-scan { width: 34px; height: 34px; border-radius: 8px; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .premium-scan { border-radius: 8px; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
         .premium-scan::before { content: ""; width: 80%; height: 2px; background: #ff0000; position: absolute; box-shadow: 0 0 8px #ff0000; animation: laser 1.5s infinite ease-in-out; z-index: 10; }
         @keyframes laser { 0%, 100% { top: 20%; } 50% { top: 75%; } }
 
@@ -67,13 +69,13 @@
                 </button>
             </div>
             <div id="h-stok" class="hidden gap-4">
-                <button onclick="exportCSV()" class="text-green-400 flex flex-col items-center">
+                <button onclick="exportData()" class="text-green-400 flex flex-col items-center">
                     <i class="fas fa-file-export text-base"></i><span class="text-[7px] font-bold mt-0.5 uppercase">Save</span>
                 </button>
                 <button onclick="document.getElementById('fIn').click()" class="text-blue-300 flex flex-col items-center">
                     <i class="fas fa-file-import text-base"></i><span class="text-[7px] font-bold mt-0.5 uppercase">Load</span>
                 </button>
-                <input type="file" id="fIn" class="hidden" accept=".csv, text/csv" onchange="importCSV(this)">
+                <input type="file" id="fIn" class="hidden" accept=".csv, .xlsx, .xls" onchange="importData(this)">
             </div>
         </div>
     </header>
@@ -95,7 +97,7 @@
                     <div class="relative flex-1">
                         <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                         <input type="text" id="k-nama" list="db-list" oninput="handleInputNama(this)" placeholder="Nama Barang / Scan..." class="w-full pl-8 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-lg font-bold text-xs outline-none focus:border-blue-600 transition-all">
-                        <button onclick="clearKasir()" class="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 flex justify-center items-center text-slate-400 hover:text-red-500 rounded-full hover:bg-red-50 transition"><i class="fas fa-times text-xs"></i></button>
+                        <button onclick="clearKasir()" class="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex justify-center items-center text-slate-400 hover:text-red-500 rounded-full hover:bg-red-50 transition"><i class="fas fa-times text-sm"></i></button>
                         <datalist id="db-list"></datalist>
                     </div>
                 </div>
@@ -209,7 +211,6 @@
             } catch(e) { db = { supplier: [], retur: [], history: [] }; cart = []; }
             
             refreshClock(); setInterval(refreshClock, 60000); refreshDL(); renderStok('sup'); renderCart();
-            if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(() => {}); }
             setupScannerEvents();
         };
 
@@ -253,15 +254,13 @@
         function getTglStr() { return new Date().toLocaleDateString('id-ID', {day: '2-digit', month: '2-digit', year: 'numeric'}); }
         function getJamStr() { return new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'}).replace(/\./g, ':'); }
 
-        // --- KAMERA LOGIC (ANTI-NYANGKUT) ---
+        // --- KAMERA LOGIC (ANTI-NYANGKUT FULL FIX) ---
         async function matikanKamera() {
             const wrap = document.getElementById('camera-wrapper');
             if (isScanning && html5QrCode) {
                 try {
-                    // Deteksi status kamera yang akurat agar tidak crash
-                    if (html5QrCode.getState && html5QrCode.getState() === 2) { 
-                        await html5QrCode.stop(); 
-                    } else if (html5QrCode.isScanning) {
+                    const state = html5QrCode.getState();
+                    if (state === 2) { // 2 berarti SCANNING
                         await html5QrCode.stop(); 
                     }
                     html5QrCode.clear(); 
@@ -283,35 +282,37 @@
                 wrap.classList.remove('hidden'); 
                 isScanning = true; 
                 
-                html5QrCode = new Html5Qrcode("scanner-layer"); 
-                html5QrCode.start({ facingMode: "environment" }, { fps: 30 }, (decoded) => { 
-                    const code = decoded.trim(); 
-                    matikanKamera(); // Langsung matikan kamera setelah bunyi *bip*
-                    
-                    if (target === 'auto') { 
-                        let f = null; db.supplier.forEach(s => s.barang.forEach(b => { if (b.bc === code) f = b; })); 
-                        if (f) { 
-                            document.getElementById('k-nama').value = f.nama; 
-                            document.getElementById('k-harga').value = f.harga.toLocaleString('id-ID'); 
-                            
-                            let existingQty = parseInt(document.getElementById('k-qty').value);
-                            if(isNaN(existingQty) || existingQty <= 0) existingQty = 1;
-                            document.getElementById('k-qty').value = existingQty; 
+                // Jeda 100ms agar pindah tempat lancar tanpa nge-blank di iOS
+                setTimeout(() => {
+                    html5QrCode = new Html5Qrcode("scanner-layer"); 
+                    html5QrCode.start({ facingMode: "environment" }, { fps: 30 }, (decoded) => { 
+                        const code = decoded.trim(); 
+                        matikanKamera(); // Matikan seketika baca barcode
+                        
+                        if (target === 'auto') { 
+                            let f = null; db.supplier.forEach(s => s.barang.forEach(b => { if (b.bc === code) f = b; })); 
+                            if (f) { 
+                                document.getElementById('k-nama').value = f.nama; 
+                                document.getElementById('k-harga').value = f.harga.toLocaleString('id-ID'); 
+                                
+                                let existingQty = parseInt(document.getElementById('k-qty').value);
+                                if(isNaN(existingQty) || existingQty <= 0) existingQty = 1;
+                                document.getElementById('k-qty').value = existingQty; 
 
-                            tambahItem(); 
+                                tambahItem(); 
+                            } 
+                            else { openModal("BARCODE TIDAK ADA", "", "PRODUK BELUM TERDAFTAR.", null, "alert"); } 
+                        } else { 
+                            document.getElementById(target).value = code; 
                         } 
-                        else { openModal("BARCODE TIDAK ADA", "", "PRODUK BELUM TERDAFTAR.", null, "alert"); } 
-                    } else { 
-                        document.getElementById(target).value = code; 
-                    } 
-                }).catch(() => { 
-                    matikanKamera(); 
-                    openModal("GAGAL KAMERA", "", "Kamera tidak didukung / Izin ditolak.", null, "alert");
-                }); 
+                    }).catch(() => { 
+                        matikanKamera(); 
+                        openModal("GAGAL KAMERA", "", "Kamera tidak didukung / Izin ditolak.", null, "alert");
+                    }); 
+                }, 100);
             }
         }
 
-        // --- KASIR LOGIC & QTY MANAJEMEN ---
         function getStokBarang(nama, harga) {
             let total = 0;
             db.supplier.forEach(s => s.barang.forEach(b => { 
@@ -458,6 +459,7 @@
             }
 
             const rec = {}; 
+            // PERBAIKAN BUG |||
             cart.forEach(i => { let k = i.nama.toUpperCase() + "|||" + i.harga; rec[k] = (rec[k] || 0) + i.qty; });
             for (let k in rec) {
                 let parts = k.split("|||"); let nM = parts[0], hM = parseInt(parts[1]), sT = 0;
@@ -558,7 +560,7 @@
 
         // --- STOK LOGIC ---
         function mode(m) {
-            openIdx = null; // OTOMATIS TUTUP ACCORDION
+            openIdx = null; // OTOMATIS TUTUP ACCORDION SAAT PINDAH MENU BAWAH
             matikanKamera(); 
             document.getElementById('section-kasir').classList.toggle('hidden', m !== 'kasir'); document.getElementById('section-stok').classList.toggle('hidden', m !== 'stok');
             document.getElementById('n-k').classList.toggle('active-nav', m === 'kasir'); document.getElementById('n-s').classList.toggle('active-nav', m === 'stok');
@@ -568,7 +570,7 @@
         }
 
         function tab(t) { 
-            openIdx = null; // OTOMATIS TUTUP ACCORDION
+            openIdx = null; // OTOMATIS TUTUP ACCORDION SAAT PINDAH SUB-MENU ATAS
             matikanKamera(); 
             curTab = t; ['sup', 'retur', 'lap'].forEach(id => document.getElementById('b-' + id).classList.toggle('tab-active', id === t)); 
             document.getElementById('fab').style.display = (t === 'sup') ? 'flex' : 'none'; renderStok(t); 
@@ -587,9 +589,7 @@
                                 <button onclick="event.stopPropagation();delSup('${escapeHTML(s.nama)}')"" class="text-red-500 p-1">✕</button>
                             </div>
                             <div class="${openIdx === i ? '' : 'hidden'} mt-3 space-y-2 relative">
-                                
                                 <div id="anchor-sup-${i}"></div>
-
                                 <div class="flex gap-2">
                                     <input id="ib-n-${i}" placeholder="NAMA BARANG" class="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-600">
                                     <button onclick="toggleScanner('ib-bc-${i}', 'anchor-sup-${i}')" class="active:scale-75 transition"><div class="premium-scan w-7 h-7 border-2 border-blue-900"></div></button>
@@ -649,7 +649,7 @@
             }
         }
 
-        // --- SISTEM MODAL PINTAR (3 MODE: alert, confirm, prompt) ---
+        // --- SISTEM MODAL PINTAR (alert, confirm, prompt) ---
         function openModal(title, val, desc, cb, mode = 'alert', type = 'text') { 
             const m = document.getElementById('b-modal'); 
             document.getElementById('m-title').innerText = title; 
@@ -669,7 +669,7 @@
             } else if (mode === 'confirm') {
                 inpBox.style.display = 'none';
                 btnCancel.style.display = 'block';
-            } else { // alert mode
+            } else { 
                 inpBox.style.display = 'none';
                 btnCancel.style.display = 'none';
             }
@@ -721,34 +721,64 @@
             document.getElementById(`ib-n-${i}`).value = ""; document.getElementById(`ib-bc-${i}`).value = ""; document.getElementById(`ib-h-${i}`).value = ""; document.getElementById(`ib-s-${i}`).value = "";
         }
 
-        function exportCSV() { 
-            let csv = "Supplier,Barang,Barcode,Harga,Stok\n"; db.supplier.forEach(s => s.barang.forEach(b => csv += `"${s.nama}","${b.nama}","${b.bc}",${b.harga},${b.stok}\n`)); 
-            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' })); a.download = 'STOK_BARLA.csv'; a.click(); 
+        // --- FUNGSI EXPORT / IMPORT XLSX ---
+        function exportData() { 
+            let data = [];
+            db.supplier.forEach(s => s.barang.forEach(b => {
+                data.push({ "Supplier": s.nama, "Barang": b.nama, "Barcode": b.bc || "", "Harga": b.harga, "Stok": b.stok });
+            }));
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "StokBarla");
+            XLSX.writeFile(wb, "STOK_BARLA.xlsx");
         }
 
-        function importCSV(input) {
-            if (!input.files || input.files.length === 0) return; const reader = new FileReader();
+        function importData(input) {
+            if (!input.files || input.files.length === 0) return; 
+            const file = input.files[0];
+            const reader = new FileReader();
+
             reader.onload = (e) => {
                 try {
-                    let text = e.target.result.replace(/^\uFEFF/, '').trim(), rows = text.split(/\r?\n/), sep = rows[0].includes(';') ? ';' : ',', totalSukses = 0;
-                    for (let i = 1; i < rows.length; i++) {
-                        const row = rows[i].trim(); if (!row) continue;
-                        const cols = row.split(new RegExp(`${sep}(?=(?:(?:[^"]*"){2})*[^"]*$)`));
-                        if (cols.length >= 5) {
-                            const cleanV = (v) => (v || "").replace(/^"|"$/g, '').trim();
-                            const sN = cleanV(cols[0]), bN = cleanV(cols[1]), bc = cleanV(cols[2]), pr = clean(cols[3]), st = Math.abs(parseInt(cols[4])) || 0;
-                            if (sN && bN) {
-                                let supplier = db.supplier.find(x => x.nama.toLowerCase() === sN.toLowerCase()); if (!supplier) { supplier = { nama: sN, barang: [] }; db.supplier.unshift(supplier); }
-                                let barang = supplier.barang.find(x => x.nama.toLowerCase() === bN.toLowerCase());
-                                if (barang) { barang.bc = bc; barang.harga = pr; barang.stok = st; } else { supplier.barang.unshift({ nama: bN, bc: bc, harga: pr, stok: st }); }
-                                totalSukses++;
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const firstSheet = workbook.SheetNames[0];
+                    const json = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet]);
+                    let totalSukses = 0;
+
+                    json.forEach(row => {
+                        const sN = (row["Supplier"] || "").toString().trim();
+                        const bN = (row["Barang"] || "").toString().trim();
+                        const bc = (row["Barcode"] || "").toString().trim();
+                        const pr = parseInt((row["Harga"] || "0").toString().replace(/[^0-9]/g, "")) || 0;
+                        const st = Math.abs(parseInt((row["Stok"] || "0").toString().replace(/[^0-9]/g, ""))) || 0;
+                        
+                        if (sN && bN) {
+                            let supplier = db.supplier.find(x => x.nama.toLowerCase() === sN.toLowerCase()); 
+                            if (!supplier) { supplier = { nama: sN, barang: [] }; db.supplier.unshift(supplier); }
+                            let barang = supplier.barang.find(x => x.nama.toLowerCase() === bN.toLowerCase());
+                            
+                            if (barang) { 
+                                barang.bc = bc; barang.harga = pr; barang.stok = st; 
+                            } else { 
+                                supplier.barang.unshift({ nama: bN, bc: bc, harga: pr, stok: st }); 
                             }
+                            totalSukses++;
                         }
+                    });
+
+                    if (totalSukses > 0) { 
+                        saveData(); 
+                        openModal("SUKSES IMPORT", "", `Berhasil Sinkronisasi ${totalSukses} data!`, () => location.reload(), "alert"); 
+                    } else { 
+                        openModal("DATA KOSONG", "", "Tidak ada data yang valid untuk dimasukkan.", null, "alert"); 
                     }
-                    if (totalSukses > 0) { saveData(); openModal("SUKSES IMPORT", "", `Berhasil Update/Sinkronisasi ${totalSukses} data!`, () => location.reload(), "alert"); }
-                } catch (err) { openModal("ERROR IMPORT", "", "Format file salah!", null, "alert"); }
+                } catch (err) { 
+                    openModal("ERROR IMPORT", "", "Format file salah atau rusak!", null, "alert"); 
+                }
+                input.value = ""; 
             };
-            reader.readAsText(input.files[0]);
+            reader.readAsArrayBuffer(file);
         }
 
         function trHR(sn) { openModal("YAKIN HAPUS?", "", `Data retur ${sn} dihapus.`, () => { db.retur = db.retur.filter(x => x.sup !== sn); saveData(); renderStok('retur'); }, "confirm"); }

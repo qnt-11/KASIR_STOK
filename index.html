@@ -423,42 +423,42 @@
 
         function cetakUlang(id) {
             const trx = db.history.find(x => x.id === id); if (!trx) return;
-            let h = `          BARLA STORE           \n      Ps. Sunggingan Lt. 2      \n         0822-2633-4999         \n--------------------------------\n`;
-            let tStr = `${trx.waktu.replace('-', ' - ')}`.padStart(32, ' ');
-            h += `${tStr}\n--------------------------------\n`;
+            let h = `          BARLA STORE          \n     Ps. Sunggingan Lt. 2      \n        0822-2633-4999         \n-------------------------------\n`;
+            let tStr = `${trx.waktu.replace('-', ' - ')}`.padStart(31, ' ');
+            h += `${tStr}\n-------------------------------\n`;
             trx.items.forEach(i => {
                 let nm = escapeHTML(i.nama).substring(0, 13).padEnd(14, ' ');
                 let q = i.qty.toString().padStart(2, ' ');
                 let pr = i.harga.toString().padStart(6, ' ');
-                let sub = (i.harga * i.qty).toLocaleString('id-ID').replace(/\./g, '.').padStart(10, ' ');
+                let sub = (i.harga * i.qty).toLocaleString('id-ID').replace(/\./g, '.').padStart(9, ' ');
                 h += `${nm}${q}${pr}${sub}\n`;
             });
-            h += `--------------------------------\n`;
-            h += `TOTAL`.padEnd(23, ' ') + trx.total.toLocaleString('id-ID').replace(/\./g, '.').padStart(9, ' ') + `\n`;
-            h += `BAYAR`.padEnd(23, ' ') + trx.bayar.toLocaleString('id-ID').replace(/\./g, '.').padStart(9, ' ') + `\n`;
-            h += `KEMBALIAN`.padEnd(23, ' ') + trx.kembali.toLocaleString('id-ID').replace(/\./g, '.').padStart(9, ' ') + `\n`;
-            h += `--------------------------------\n          Terimakasih`;
+            h += `-------------------------------\n`;
+            h += `TOTAL`.padEnd(22, ' ') + trx.total.toLocaleString('id-ID').replace(/\./g, '.').padStart(9, ' ') + `\n`;
+            h += `BAYAR`.padEnd(22, ' ') + trx.bayar.toLocaleString('id-ID').replace(/\./g, '.').padStart(9, ' ') + `\n`;
+            h += `KEMBALIAN`.padEnd(22, ' ') + trx.kembali.toLocaleString('id-ID').replace(/\./g, '.').padStart(9, ' ') + `\n`;
+            h += `-------------------------------\n          Terimakasih`;
             document.getElementById('p-konten').innerHTML = `<pre>${h}</pre>`;
             window.print();
         }
         
         function waUlang(id) {
             const trx = db.history.find(x => x.id === id); if (!trx) return;
-            let h = `          BARLA STORE           \n      Ps. Sunggingan Lt. 2      \n--------------------------------\n`;
-            let tStr = `${trx.waktu.replace('-', ' - ')}`.padStart(32, ' ');
-            h += `${tStr}\n--------------------------------\n`;
+            let h = `          BARLA STORE          \n     Ps. Sunggingan Lt. 2      \n-------------------------------\n`;
+            let tStr = `${trx.waktu.replace('-', ' - ')}`.padStart(31, ' ');
+            h += `${tStr}\n-------------------------------\n`;
             trx.items.forEach(i => {
                 let nm = i.nama.substring(0, 13).padEnd(14, ' ');
                 let q = i.qty.toString().padStart(2, ' ');
                 let pr = i.harga.toString().padStart(6, ' ');
-                let sub = (i.harga * i.qty).toLocaleString('id-ID').replace(/\./g, '.').padStart(10, ' ');
+                let sub = (i.harga * i.qty).toLocaleString('id-ID').replace(/\./g, '.').padStart(9, ' ');
                 h += `${nm}${q}${pr}${sub}\n`;
             });
-            h += `--------------------------------\n`;
-            h += `TOTAL`.padEnd(23, ' ') + trx.total.toLocaleString('id-ID').replace(/\./g, '.').padStart(9, ' ') + `\n`;
-            h += `BAYAR`.padEnd(23, ' ') + trx.bayar.toLocaleString('id-ID').replace(/\./g, '.').padStart(9, ' ') + `\n`;
-            h += `KEMBALIAN`.padEnd(23, ' ') + trx.kembali.toLocaleString('id-ID').replace(/\./g, '.').padStart(9, ' ');
-            let finalStr = "```text\n" + h + "\n```";
+            h += `-------------------------------\n`;
+            h += `TOTAL`.padEnd(22, ' ') + trx.total.toLocaleString('id-ID').replace(/\./g, '.').padStart(9, ' ') + `\n`;
+            h += `BAYAR`.padEnd(22, ' ') + trx.bayar.toLocaleString('id-ID').replace(/\./g, '.').padStart(9, ' ') + `\n`;
+            h += `KEMBALIAN`.padEnd(22, ' ') + trx.kembali.toLocaleString('id-ID').replace(/\./g, '.').padStart(9, ' ');
+            let finalStr = "```\n" + h + "\n```";
             window.open(`https://wa.me/?text=${encodeURIComponent(finalStr)}`);
         }
 
@@ -512,27 +512,38 @@
             const term = (document.getElementById('i-stok-search')?.value || "").toLowerCase();
             
             if (t === 'sup') {
-                let hasData = false;
-                if (db.supplier.length === 0) { c.innerHTML = "<div class='text-center py-20 font-black text-white'>KOSONG</div>"; return; }
-                
-                db.supplier.forEach((s, i) => {
-                    let filteredBarang = s.barang.filter(b => b.nama.toLowerCase().includes(term) || (b.bc && b.bc.toLowerCase().includes(term)));
-                    if (term && filteredBarang.length === 0 && !s.nama.toLowerCase().includes(term)) return;
-                    
-                    let itemsToRender = (term && s.nama.toLowerCase().includes(term) && filteredBarang.length===0) ? s.barang : (term ? filteredBarang : s.barang);
-                    
-                    hasData = true;
-                    let bl = ""; itemsToRender.forEach((b) => {
-                        let origIndex = s.barang.indexOf(b);
-                        bl += `<div class="flex justify-between items-center py-2.5 border-b border-[#2b2d31] border-dashed"><div><b class="text-xs text-white">${escapeHTML(b.nama)}</b><br><span class="text-[#3b82f6] text-[10px]">Rp ${b.harga.toLocaleString('id-ID')} | <span class="text-[#94a3b8]">${escapeHTML(b.bc) || '-'}</span></span></div><div class="flex items-center gap-3"><b class="text-sm text-white">${b.stok}</b><button onclick="openSheet('sup', ${i}, ${origIndex})" class="text-white hover:text-white text-lg px-2">⋮</button></div></div>`;
+                if (term !== "") {
+                    // MODE PENCARIAN BERSIH (FLAT SEARCH)
+                    let hasData = false;
+                    let flatHtml = "";
+                    db.supplier.forEach((s, i) => {
+                        let matchSup = s.nama.toLowerCase().includes(term);
+                        s.barang.forEach((b) => {
+                            if (matchSup || b.nama.toLowerCase().includes(term) || (b.bc && b.bc.toLowerCase().includes(term))) {
+                                hasData = true;
+                                let origIndex = s.barang.indexOf(b);
+                                flatHtml += `<div class="bg-[#1e1f22] rounded-xl border border-[#2b2d31] p-3 mb-2 shadow-sm flex justify-between items-center"><div><b class="text-xs text-white">${escapeHTML(b.nama)}</b><br><span class="text-[#3b82f6] text-[10px]">Rp ${b.harga.toLocaleString('id-ID')}</span> <span class="text-[#94a3b8] text-[9px]">| Sisa: ${b.stok} | <i class="text-[#6b7280]">(${escapeHTML(s.nama)})</i></span></div><button onclick="openSheet('sup', ${i}, ${origIndex})" class="text-white hover:text-[#3b82f6] text-lg px-2">⋮</button></div>`;
+                            }
+                        });
                     });
+                    if(hasData) c.innerHTML = flatHtml;
+                    else c.innerHTML = "<div class='text-center py-20 font-black text-[#6b7280] uppercase'>Tidak Ditemukan</div>";
+                } else {
+                    // MODE NORMAL DENGAN ACCORDION
+                    let hasData = false;
+                    if (db.supplier.length === 0) { c.innerHTML = "<div class='text-center py-20 font-black text-white'>KOSONG</div>"; return; }
                     
-                    // PERUBAHAN AUTO-EXPAND: Jika ada term pencarian, div list barang otomatis terbuka (tidak 'hidden')
-                    let isExpanded = (openIdx === i) || (term !== "");
-                    
-                    c.innerHTML += `<div class="bg-[#1e1f22] rounded-2xl border border-[#2b2d31] p-4 mb-3 shadow-sm"><div class="flex justify-between items-start" onclick="openIdx=(openIdx===${i}?null:${i});matikanKamera();renderStok('sup')"><b class="uppercase text-[#ffd700] text-sm leading-tight">${escapeHTML(s.nama)}</b><button onclick="event.stopPropagation();openSheet('head', ${i})" class="text-white hover:text-white px-2 font-bold text-lg leading-none">⋮</button></div><div class="${isExpanded ? '' : 'hidden'} mt-3 space-y-2 relative"><div class="flex gap-2"><input id="ib-n-${i}" placeholder="NAMA BARANG" class="flex-1 p-3 rounded-xl text-xs outline-none"><button onclick="bukaKameraPopup('ib-bc-${i}')" class="active:scale-75 transition bg-transparent border-0 rounded-xl px-2"><div class="premium-scan w-7 h-7 border-2 border-white"></div></button></div><input id="ib-bc-${i}" inputmode="numeric" placeholder="BARCODE" class="w-full p-3 rounded-xl text-xs outline-none"><div class="flex gap-2"><input id="ib-h-${i}" inputmode="numeric" oninput="formatRupiah(this)" placeholder="HARGA" class="w-1/2 p-3 rounded-xl text-xs outline-none"><input id="ib-s-${i}" inputmode="numeric" type="number" placeholder="STOK" class="w-1/2 p-3 rounded-xl text-xs outline-none"></div><button onclick="addB(${i})" class="w-full bg-transparent border border-[#3b82f6] text-[#3b82f6] py-3 rounded-xl font-bold uppercase text-xs active:scale-95 transition mt-2">Simpan Barang</button><div class="mt-2 border-t border-[#2b2d31] pt-1">${bl}</div></div></div>`;
-                });
-                if(!hasData) c.innerHTML = "<div class='text-center py-20 font-black text-[#6b7280] uppercase'>Tidak Ditemukan</div>";
+                    db.supplier.forEach((s, i) => {
+                        hasData = true;
+                        let bl = ""; s.barang.forEach((b) => {
+                            let origIndex = s.barang.indexOf(b);
+                            bl += `<div class="flex justify-between items-center py-2.5 border-b border-[#2b2d31] border-dashed"><div><b class="text-xs text-white">${escapeHTML(b.nama)}</b><br><span class="text-[#3b82f6] text-[10px]">Rp ${b.harga.toLocaleString('id-ID')} | <span class="text-[#94a3b8]">${escapeHTML(b.bc) || '-'}</span></span></div><div class="flex items-center gap-3"><b class="text-sm text-white">${b.stok}</b><button onclick="openSheet('sup', ${i}, ${origIndex})" class="text-white hover:text-white text-lg px-2">⋮</button></div></div>`;
+                        });
+                        let isExpanded = (openIdx === i);
+                        c.innerHTML += `<div class="bg-[#1e1f22] rounded-2xl border border-[#2b2d31] p-4 mb-3 shadow-sm"><div class="flex justify-between items-start" onclick="openIdx=(openIdx===${i}?null:${i});matikanKamera();renderStok('sup')"><b class="uppercase text-[#ffd700] text-sm leading-tight">${escapeHTML(s.nama)}</b><button onclick="event.stopPropagation();openSheet('head', ${i})" class="text-white hover:text-white px-2 font-bold text-lg leading-none">⋮</button></div><div class="${isExpanded ? '' : 'hidden'} mt-3 space-y-2 relative"><div class="flex gap-2"><input id="ib-n-${i}" placeholder="NAMA BARANG" class="flex-1 p-3 rounded-xl text-xs outline-none"><button onclick="bukaKameraPopup('ib-bc-${i}')" class="active:scale-75 transition bg-transparent border-0 rounded-xl px-2"><div class="premium-scan w-7 h-7 border-2 border-white"></div></button></div><input id="ib-bc-${i}" inputmode="numeric" placeholder="BARCODE" class="w-full p-3 rounded-xl text-xs outline-none"><div class="flex gap-2"><input id="ib-h-${i}" inputmode="numeric" oninput="formatRupiah(this)" placeholder="HARGA" class="w-1/2 p-3 rounded-xl text-xs outline-none"><input id="ib-s-${i}" inputmode="numeric" type="number" placeholder="STOK" class="w-1/2 p-3 rounded-xl text-xs outline-none"></div><button onclick="addB(${i})" class="w-full bg-transparent border border-[#3b82f6] text-[#3b82f6] py-3 rounded-xl font-bold uppercase text-xs active:scale-95 transition mt-2">Simpan Barang</button><div class="mt-2 border-t border-[#2b2d31] pt-1">${bl}</div></div></div>`;
+                    });
+                    if(!hasData) c.innerHTML = "<div class='text-center py-20 font-black text-[#6b7280] uppercase'>Tidak Ditemukan</div>";
+                }
                 
             } else if (t === 'retur') {
                 const g = db.retur.reduce((a, r) => { (a[r.sup] = a[r.sup] || []); a[r.sup].push(r); return a; }, {});
@@ -670,87 +681,87 @@
         function importData(input) { if(!input.files[0]) return; const reader = new FileReader(); reader.readAsArrayBuffer(input.files[0]); reader.onload = (e) => { try { const workbook = XLSX.read(new Uint8Array(e.target.result), {type:'array'}); const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]); json.forEach(row => { const sN = (row["Supplier"]||"").toString().trim(), bN = (row["Barang"]||"").toString().trim(), bc = (row["Barcode"]||"").toString().trim(), pr = clean(row["Harga"]||"0"), st = Math.abs(parseInt(row["Stok"]||"0"))||0; if(sN && bN) { let sup = db.supplier.find(x=>x.nama.toLowerCase()===sN.toLowerCase()); if(!sup){ sup={nama:sN, barang:[]}; db.supplier.unshift(sup); } let brg = sup.barang.find(x=>x.nama.toLowerCase()===bN.toLowerCase()); if(brg){ brg.bc=bc; brg.harga=pr; brg.stok=st; } else sup.barang.unshift({nama:bN, bc, harga:pr, stok:st}); } }); saveData(); openModal("SUKSES","","LOAD DARI EXCEL!",()=>{ renderStok(curTab); refreshDL(); },"alert"); } catch(err) { openModal("ERROR","","Format salah!",null,"alert"); } input.value = ""; }; }
         
         function printReturSemua() { 
-            let h = `          BARLA STORE           \n      Ps. Sunggingan Lt. 2      \n         0822-2633-4999         \n--------------------------------\n`; 
-            let tStr = `Semua Data Retur - ${getTglStr()}`.padEnd(32, ' ');
-            h += `${tStr}\n--------------------------------\n`; 
+            let h = `          BARLA STORE          \n     Ps. Sunggingan Lt. 2      \n        0822-2633-4999         \n-------------------------------\n`; 
+            let tStr = `Semua Data Retur - ${getTglStr()}`.padEnd(31, ' ');
+            h += `${tStr}\n-------------------------------\n`; 
             const g = db.retur.reduce((a,r)=>{(a[r.sup]=a[r.sup]||[]);a[r.sup].push(r);return a;},{}); 
             let first = true;
             for(let s in g){ 
                 if(!first) h += `\n`;
-                h += `• ${escapeHTML(s).toUpperCase().substring(0,30)}\n`; 
+                h += `• ${escapeHTML(s).toUpperCase().substring(0,29)}\n\n`; 
                 g[s].forEach(r=> { 
-                    let nm = escapeHTML(r.nama).substring(0, 24).padEnd(24, ' '); 
+                    let nm = escapeHTML(r.nama).substring(0, 18).padEnd(18, ' '); 
                     let q = r.qty.toString().padStart(4, ' ') + " pcs"; 
-                    h += `${nm}${q}\n`; 
+                    h += `${nm} ${q}\n`; 
                 }); 
                 first = false;
             } 
-            h += `--------------------------------\n`;
+            h += `-------------------------------\n`;
             document.getElementById('p-konten').innerHTML = `<pre>${h}</pre>`; window.print(); 
         }
         
         function printReturSup(sn) { 
-            let h = `          BARLA STORE           \n      Ps. Sunggingan Lt. 2      \n         0822-2633-4999         \n--------------------------------\n`; 
-            let tStr = `Data Retur - ${getTglStr()}`.padEnd(32, ' ');
-            h += `${tStr}\n--------------------------------\n`; 
-            h += `• ${escapeHTML(sn).toUpperCase().substring(0,30)}\n`; 
+            let h = `          BARLA STORE          \n     Ps. Sunggingan Lt. 2      \n        0822-2633-4999         \n-------------------------------\n`; 
+            let tStr = `Data Retur - ${getTglStr()}`.padEnd(31, ' ');
+            h += `${tStr}\n-------------------------------\n`; 
+            h += `• ${escapeHTML(sn).toUpperCase().substring(0,29)}\n\n`; 
             db.retur.filter(x=>x.sup===sn).forEach(r=> { 
-                let nm = escapeHTML(r.nama).substring(0, 24).padEnd(24, ' '); 
+                let nm = escapeHTML(r.nama).substring(0, 18).padEnd(18, ' '); 
                 let q = r.qty.toString().padStart(4, ' ') + " pcs"; 
-                h += `${nm}${q}\n`; 
+                h += `${nm} ${q}\n`; 
             }); 
-            h += `--------------------------------\n`;
+            h += `-------------------------------\n`;
             document.getElementById('p-konten').innerHTML = `<pre>${h}</pre>`; window.print(); 
         }
         
         function printLapSemua() { 
-            let h = `          BARLA STORE           \n      Ps. Sunggingan Lt. 2      \n         0822-2633-4999         \n--------------------------------\n`; 
-            let tStr = `Semua Laporan - ${getTglStr()}`.padEnd(32, ' ');
-            h += `${tStr}\n--------------------------------\n`; 
+            let h = `          BARLA STORE          \n     Ps. Sunggingan Lt. 2      \n        0822-2633-4999         \n-------------------------------\n`; 
+            let tStr = `Semua Laporan - ${getTglStr()}`.padEnd(31, ' ');
+            h += `${tStr}\n-------------------------------\n`; 
             let has = false; let first = true;
             db.supplier.forEach(s=>{ 
                 const k=s.barang.filter(b=>b.stok<30); 
                 if(k.length>0){ 
                     has=true; 
                     if(!first) h += `\n`;
-                    h += `• ${escapeHTML(s.nama).toUpperCase().substring(0,30)}\n`; 
+                    h += `• ${escapeHTML(s.nama).toUpperCase().substring(0,29)}\n\n`; 
                     k.forEach(b=>{ 
-                        let nm = escapeHTML(b.nama).substring(0, 23).padEnd(23, ' '); 
+                        let nm = escapeHTML(b.nama).substring(0, 18).padEnd(18, ' '); 
                         let sisa = `Sisa: ${b.stok}`.padStart(9, ' '); 
-                        h += `${nm}${sisa}\n`; 
+                        h += `${nm} ${sisa}\n`; 
                     }); 
                     first = false;
                 } 
             }); 
-            h += `--------------------------------\n`;
+            h += `-------------------------------\n`;
             if(!has) return openModal("AMAN","","Semua stok cukup.",null,"alert"); 
             document.getElementById('p-konten').innerHTML=`<pre>${h}</pre>`; window.print(); 
         }
         
         function waR(sn) { 
-            let h = `          BARLA STORE           \n      Ps. Sunggingan Lt. 2      \n--------------------------------\n`; 
-            let tStr = `Data Retur - ${getTglStr()}`.padEnd(32, ' ');
-            h += `${tStr}\n--------------------------------\n`; 
-            h += `• ${sn.toUpperCase().substring(0,30)}\n`; 
+            let h = `          BARLA STORE          \n     Ps. Sunggingan Lt. 2      \n-------------------------------\n`; 
+            let tStr = `Data Retur - ${getTglStr()}`.padEnd(31, ' ');
+            h += `${tStr}\n-------------------------------\n`; 
+            h += `• ${sn.toUpperCase().substring(0,29)}\n\n`; 
             db.retur.filter(x=>x.sup===sn).forEach(r=> { 
-                let nm = r.nama.substring(0, 24).padEnd(24, ' '); 
+                let nm = r.nama.substring(0, 18).padEnd(18, ' '); 
                 let q = r.qty.toString().padStart(4, ' ') + " pcs"; 
-                h += `${nm}${q}\n`; 
+                h += `${nm} ${q}\n`; 
             }); 
-            window.open(`https://wa.me/?text=${encodeURIComponent("```text\n" + h + "\n```")}`); 
+            window.open(`https://wa.me/?text=${encodeURIComponent("```\n" + h + "```")}`); 
         }
         
         function waO(i) { 
             let s=db.supplier[i]; 
-            let h = `          BARLA STORE           \n      Ps. Sunggingan Lt. 2      \n--------------------------------\n`; 
-            let tStr = `Order - ${getTglStr()}`.padEnd(32, ' ');
-            h += `${tStr}\n--------------------------------\n`; 
-            h += `• ${s.nama.toUpperCase().substring(0,30)}\n`; 
+            let h = `          BARLA STORE          \n     Ps. Sunggingan Lt. 2      \n-------------------------------\n`; 
+            let tStr = `Order - ${getTglStr()}`.padEnd(31, ' ');
+            h += `${tStr}\n-------------------------------\n`; 
+            h += `• ${s.nama.toUpperCase().substring(0,29)}\n\n`; 
             s.barang.filter(b=>b.stok<30).forEach(b=> { 
-                let nm = b.nama.substring(0, 28).padEnd(28, ' '); 
-                h += `${nm} : \n`; 
+                let nm = b.nama.substring(0, 18).padEnd(18, ' '); 
+                h += `${nm}: \n`; 
             }); 
-            window.open(`https://wa.me/?text=${encodeURIComponent("```text\n" + h + "\n```")}`); 
+            window.open(`https://wa.me/?text=${encodeURIComponent("```\n" + h + "```")}`); 
         }
         
         function trHR(sn) { openModal("HAPUS?", "", `Data retur ${sn} dihapus?`, () => { db.retur=db.retur.filter(x=>x.sup!==sn); saveData(); renderStok('retur'); }, "confirm"); }

@@ -1,28 +1,34 @@
-const CACHE_NAME = "kasir-barla-v23.0";
+const CACHE_NAME = 'barla-kasir-v18.0';
+
+// File utama yang disimpan ke memori HP untuk akses offline
 const urlsToCache = [
-  "./",
-  "./index.html",
-  "./manifest.json",
-  "https://cdn-icons-png.flaticon.com/512/3514/3514491.png",
-  "https://unpkg.com/html5-qrcode"
+  './',
+  './index.html',
+  './manifest.json'
 ];
 
-self.addEventListener("install", event => {
+// Proses Instalasi & Menyimpan Cache
+self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(urlsToCache);
-    })
+    caches.open(CACHE_NAME)
+      .then(cache => {
+        console.log('Opened cache');
+        return cache.addAll(urlsToCache);
+      })
   );
+  // Memaksa service worker baru untuk langsung aktif
   self.skipWaiting();
 });
 
-self.addEventListener("activate", event => {
+// Proses Aktivasi & Menghapus Cache Versi Lama (Biar gak nyangkut)
+self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
-        cacheNames.map(cache => {
-          if (cache !== CACHE_NAME) {
-            return caches.delete(cache);
+        cacheNames.map(cacheName => {
+          if (cacheName !== CACHE_NAME) {
+            console.log('Menghapus cache lama:', cacheName);
+            return caches.delete(cacheName);
           }
         })
       );
@@ -31,10 +37,11 @@ self.addEventListener("activate", event => {
   self.clients.claim();
 });
 
-self.addEventListener("fetch", event => {
+// Proses Fetch (Jaringan Pintar: Coba internet dulu, kalau gagal pakai cache/offline)
+self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request);
+    fetch(event.request).catch(() => {
+      return caches.match(event.request);
     })
   );
 });

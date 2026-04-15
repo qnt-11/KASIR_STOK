@@ -3,8 +3,8 @@
   "short_name": "KASIR",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#1e3a8a",
-  "theme_color": "#1e3a8a",
+  "background_color": "#131314",
+  "theme_color": "#131314",
   "icons": [
     {
       "src": "https://cdn-icons-png.flaticon.com/512/3514/3514491.png",

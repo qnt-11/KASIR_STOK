@@ -121,7 +121,7 @@
                     <div class="w-1/2"><input type="text" id="i-bayar" inputmode="numeric" oninput="formatRupiah(this)" placeholder="Bayar" class="w-full text-right text-base font-black px-3 py-1.5 rounded-lg outline-none"></div>
                 </div>
                 <div class="max-w-md mx-auto">
-                    <div id="b-kembali" class="hidden flex justify-between items-center bg-[#131314] border border-[#4b5563] rounded-lg p-1.5 px-3 mb-2 transition-all"><span class="text-[10px] font-bold text-white uppercase">Kembalian</span><span id="t-kembali" class="text-sm font-black text-[#ff0000]">Rp 0</span></div>
+                    <div id="b-kembali" class="hidden flex justify-between items-center bg-[#131314] border border-[#4b5563] rounded-lg p-1.5 px-3 mb-2 transition-all"><span class="text-[10px] font-bold text-white uppercase">Kembalian</span><span id="t-kembali" class="text-sm font-black">Rp 0</span></div>
                     <div class="flex gap-2">
                         <button onclick="checkout('wa')" class="flex-1 bg-[#1e1f22] border border-[#25D366] text-[#25D366] font-bold py-2.5 rounded-lg shadow-sm uppercase text-[11px] active:scale-95 transition flex justify-center items-center gap-1.5"><i class="fab fa-whatsapp text-sm"></i> WhatsApp</button>
                         <button onclick="checkout('print')" class="flex-1 bg-[#1e1f22] border border-[#3b82f6] text-[#3b82f6] font-bold py-2.5 rounded-lg shadow-sm uppercase text-[11px] active:scale-95 transition flex justify-center items-center gap-1.5"><i class="fas fa-print text-sm"></i> Cetak</button>
@@ -155,7 +155,7 @@
         <div class="bg-[#1e1f22] w-full max-w-xs rounded-3xl p-6 shadow-2xl space-y-4 border-t-[8px]" id="m-border">
             <h3 id="m-title" class="font-black text-white text-center uppercase text-lg italic"></h3>
             <p id="m-desc" class="text-[11px] text-white font-bold text-center uppercase whitespace-pre-wrap"></p>
-            <div id="m-input-box" style="display:none;" class="flex gap-2 items-center rounded-2xl border-2">
+            <div id="m-input-box" style="display:none;" class="flex gap-2 items-center rounded-2xl border-2 overflow-hidden">
                 <input type="text" id="m-input" oninput="handleModalInput(this)" class="flex-1 w-0 p-3 bg-transparent border-none text-center text-xl font-black outline-none text-white">
                 <button id="m-scan-btn" style="display:none;" class="w-12 h-12 shrink-0 bg-transparent flex items-center justify-center active:scale-90 transition pr-2"><div class="premium-scan w-8 h-8 border border-white rounded-md"></div></button>
             </div>
@@ -229,7 +229,7 @@
                 const data = await res.json();
                 if(data && data.supplier) { 
                     db = data; saveData(); 
-                    openModal("SUKSES", "", "LOAD GOOGLE SHEETS!", () => { renderStok(curTab); refreshDL(); }, "alert"); 
+                    openModal("SUKSES", "", "LOAD DARI GOOGLE SHEETS!", () => { renderStok(curTab); refreshDL(); }, "alert"); 
                 }
                 else openModal("GAGAL", "", "Data Cloud kosong.", null, "alert");
             } catch(e) { openModal("GAGAL", "", "Gagal mengambil data.", null, "alert"); }
@@ -360,14 +360,17 @@
             const bStr = document.getElementById('i-bayar').value;
             const b = bStr ? clean(bStr) : 0;
             const box = document.getElementById('b-kembali');
+            const tKembali = document.getElementById('t-kembali');
 
             if (cart.length > 0 && bStr !== "") {
                 box.classList.remove('hidden');
                 let diff = b - t;
                 if (diff < 0) {
-                    document.getElementById('t-kembali').innerText = "-Rp " + Math.abs(diff).toLocaleString('id-ID');
+                    tKembali.innerText = "-Rp " + Math.abs(diff).toLocaleString('id-ID');
+                    tKembali.className = "text-sm font-black text-[#ff0000]";
                 } else {
-                    document.getElementById('t-kembali').innerText = "Rp " + diff.toLocaleString('id-ID');
+                    tKembali.innerText = "Rp " + diff.toLocaleString('id-ID');
+                    tKembali.className = "text-sm font-black text-white";
                 }
             } else {
                 box.classList.add('hidden');
@@ -410,7 +413,7 @@
         function cetakUlang(id) {
             const trx = db.history.find(x => x.id === id); if (!trx) return;
             let h = `          BARLA STORE           \n      Ps. Sunggingan Lt. 2      \n         0822-2633-4999         \n--------------------------------\n`;
-            let tStr = `${trx.waktu}`.padEnd(21, ' ') + `KASIR TR/01`;
+            let tStr = `KASIR TR/01`.padEnd(18, ' ') + `${trx.waktu}`;
             h += `${tStr}\n--------------------------------\n`;
             trx.items.forEach(i => {
                 let nm = escapeHTML(i.nama).substring(0, 13).padEnd(13, ' ');
@@ -430,7 +433,7 @@
         function waUlang(id) {
             const trx = db.history.find(x => x.id === id); if (!trx) return;
             let h = `          BARLA STORE           \n      Ps. Sunggingan Lt. 2      \n         0822-2633-4999         \n--------------------------------\n`;
-            let tStr = `${trx.waktu}`.padEnd(21, ' ') + `KASIR TR/01`;
+            let tStr = `KASIR TR/01`.padEnd(18, ' ') + `${trx.waktu}`;
             h += `${tStr}\n--------------------------------\n`;
             trx.items.forEach(i => {
                 let nm = i.nama.substring(0, 13).padEnd(13, ' ');
@@ -537,6 +540,7 @@
             else if (t.includes("RETUR")) { btnColor = "bg-[#facc15]"; bColor = "#facc15"; textColor = "text-black"; }
             else if (t.includes("SUPPLIER")) { btnColor = "bg-[#ffd700]"; bColor = "#ffd700"; textColor = "text-black"; }
             else if (t.includes("EDIT BARCODE")) { btnColor = "bg-[#ffffff]"; bColor = "#ffffff"; textColor = "text-black"; }
+            else if (d.includes("EXCEL")) { btnColor = "bg-[#217346]"; bColor = "#217346"; textColor = "text-white"; }
             else if (t.includes("SUKSES") || t.includes("UPLOADING") || t.includes("DOWNLOADING")) { btnColor = "bg-[#38bdf8]"; bColor = "#38bdf8"; textColor = "text-black"; }
             else if (t.includes("EDIT HARGA") || t.includes("EDIT STOK")) { btnColor = "bg-[#3b82f6]"; bColor = "#3b82f6"; }
             else { btnColor = "bg-[#3b82f6]"; bColor = "#3b82f6"; }
@@ -553,7 +557,7 @@
         function closeModal() { document.getElementById('b-modal').style.display = 'none'; }
         
         function exportData() { let d = []; db.supplier.forEach(s=>s.barang.forEach(b=>d.push({"Supplier":s.nama,"Barang":b.nama,"Barcode":b.bc||"","Harga":b.harga,"Stok":b.stok}))); const ws = XLSX.utils.json_to_sheet(d); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Stok"); XLSX.writeFile(wb, "STOK_BARLA.xlsx"); }
-        function importData(input) { if(!input.files[0]) return; const reader = new FileReader(); reader.readAsArrayBuffer(input.files[0]); reader.onload = (e) => { try { const workbook = XLSX.read(new Uint8Array(e.target.result), {type:'array'}); const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]); json.forEach(row => { const sN = (row["Supplier"]||"").toString().trim(), bN = (row["Barang"]||"").toString().trim(), bc = (row["Barcode"]||"").toString().trim(), pr = clean(row["Harga"]||"0"), st = Math.abs(parseInt(row["Stok"]||"0"))||0; if(sN && bN) { let sup = db.supplier.find(x=>x.nama.toLowerCase()===sN.toLowerCase()); if(!sup){ sup={nama:sN, barang:[]}; db.supplier.unshift(sup); } let brg = sup.barang.find(x=>x.nama.toLowerCase()===bN.toLowerCase()); if(brg){ brg.bc=bc; brg.harga=pr; brg.stok=st; } else sup.barang.unshift({nama:bN, bc, harga:pr, stok:st}); } }); saveData(); openModal("SUKSES","","LOAD EXCEL",()=>{ renderStok(curTab); refreshDL(); },"alert"); } catch(err) { openModal("ERROR","","Format salah!",null,"alert"); } input.value = ""; }; }
+        function importData(input) { if(!input.files[0]) return; const reader = new FileReader(); reader.readAsArrayBuffer(input.files[0]); reader.onload = (e) => { try { const workbook = XLSX.read(new Uint8Array(e.target.result), {type:'array'}); const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]); json.forEach(row => { const sN = (row["Supplier"]||"").toString().trim(), bN = (row["Barang"]||"").toString().trim(), bc = (row["Barcode"]||"").toString().trim(), pr = clean(row["Harga"]||"0"), st = Math.abs(parseInt(row["Stok"]||"0"))||0; if(sN && bN) { let sup = db.supplier.find(x=>x.nama.toLowerCase()===sN.toLowerCase()); if(!sup){ sup={nama:sN, barang:[]}; db.supplier.unshift(sup); } let brg = sup.barang.find(x=>x.nama.toLowerCase()===bN.toLowerCase()); if(brg){ brg.bc=bc; brg.harga=pr; brg.stok=st; } else sup.barang.unshift({nama:bN, bc, harga:pr, stok:st}); } }); saveData(); openModal("SUKSES","","LOAD DARI EXCEL!",()=>{ renderStok(curTab); refreshDL(); },"alert"); } catch(err) { openModal("ERROR","","Format salah!",null,"alert"); } input.value = ""; }; }
         
         function printReturSemua() { 
             let h = `          RETUR SEMUA           \n          (${getTglStr().replace(/\./g,'/')})           \n\n`; 

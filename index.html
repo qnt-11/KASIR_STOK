@@ -252,14 +252,15 @@
 
     <script>
         const KEY = 'STORE_FAM_BARLA_V30_CUSTOM';
-        // PASTI GANTI INI DENGAN URL APPS SCRIPT ANDA
-        const CLOUD_URL = "URL_GOOGLE_APPS_SCRIPT_ANDA_DI_SINI"; 
+        // PENYUNTIKAN LINK BERHASIL DILAKUKAN DI SINI
+        const CLOUD_URL = "https://script.google.com/macros/s/AKfycbyDztAfhUPJ-tuAcYWm0jKnaefmL5MPJFB2K2wPp-gvCu29ZXb3CprBKQW_TvSkrN9W/exec"; 
 
         let db = { supplier: [], retur: [], history: [] }; 
         let cart = []; let tempCloudHistory = [];
         let isScanning = false, html5QrCode = null, curTab = 'sup', selS = null, selB = null, openIdx = null, pendingIdxGrosir = null; 
         let isKasirGrosir = false, selKasirSup = null, activeReturType = null, activeReturItem = null, curDropdownOpen = null, activeDropdownCallback = null;
         let unuploadedData = false; 
+        let lastBackupDate = ""; 
 
         const ecerUnitList = ['pcs', 'renceng', 'botol', 'kg', 'bungkus', 'kaleng', 'sachet', 'strip'];
         const grosirUnitList = ['karton', 'lusin', 'slop', 'pack'];
@@ -287,7 +288,22 @@
         
         function formatRupiah(el) { let v = el.value.replace(/[^0-9]/g, ""); el.value = v ? new Intl.NumberFormat('id-ID').format(v) : ""; if (el.id === 'i-bayar') updateChange(); }
         function clean(s) { return parseInt(s.toString().replace(/[^0-9]/g, "")) || 0; }
-        function refreshClock() { const now = new Date(); document.getElementById('h-time').innerHTML = `<span class="text-white">${now.toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'})}</span> <span class="text-[#ff0000] font-black ml-1">${now.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}).replace(/\./g, ':')}</span>`; }
+        
+        function refreshClock() { 
+            const now = new Date(); 
+            document.getElementById('h-time').innerHTML = `<span class="text-white">${now.toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'})}</span> <span class="text-[#ff0000] font-black ml-1">${now.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}).replace(/\./g, ':')}</span>`; 
+            
+            let currentDateStr = now.toLocaleDateString('id-ID');
+            if (now.getHours() === 12 && now.getMinutes() === 0 && lastBackupDate !== currentDateStr) {
+                lastBackupDate = currentDateStr; 
+                if (navigator.onLine) {
+                    uploadCloud(true);
+                } else {
+                    openModal("PERINGATAN", "", "BACKUP OTOMATIS SAMBUNGKAN KE INTERNET", () => {}, "alert");
+                }
+            }
+        }
+        
         function getTglStr() { return new Date().toLocaleDateString('id-ID', {day: '2-digit', month: '2-digit', year: '2-digit'}).replace(/\//g, '.'); }
         function getJamStr() { return new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'}).replace(/\./g, ':'); }
 
@@ -298,7 +314,35 @@
         function refreshDL() { const dl = document.getElementById('db-list'); dl.innerHTML = ""; db.supplier.forEach(s => s.barang.forEach(b => { const inC = cart.find(x => x.nama.toUpperCase() === b.nama.toUpperCase() && x.sup === s.nama); if (b.stok > 0 && (!inC || inC.qty < b.stok)) { let o = document.createElement('option'); o.value = b.nama; o.innerText = `Sisa: ${formatStok(b.stok, b.isi, b.sK, b.sB)}`; dl.appendChild(o); } })); }
         function formatStok(total, isi, sK, sB) { if (!sB || !isi || isi <= 1) return `${total} ${sK || 'satuan'}`; let besar = Math.floor(total / isi); let kecil = (total % isi).toFixed(2).replace(/\.00$/, ""); let res = []; if (besar > 0) res.push(`${besar} ${sB}`); if (kecil > 0 || besar === 0) res.push(`${kecil} ${sK || 'satuan'}`); return res.join(' '); }
 
-        function tambahItem() { const n = document.getElementById('k-nama').value.trim(); let qInput = Math.abs(parseFloat(document.getElementById('k-qty').value)) || 1; let pInput = clean(document.getElementById('k-harga').value); if (!n) return; let fb = null; let fbSup = null; if (selKasirSup) { let s = db.supplier.find(x => x.nama === selKasirSup); if (s) { fb = s.barang.find(b => b.nama.toUpperCase() === n.toUpperCase()); fbSup = s; } } if (!fb) { db.supplier.forEach(s => s.barang.forEach(b => { if (b.nama.toUpperCase() === n.toUpperCase()) { fb = b; fbSup = s; } })); } if (!fb) { openModal("TIDAK ADA", "", "Barang tidak terdaftar!", null, "alert"); return; } if (fb.stok <= 0) { openModal("KOSONG", "", "Barang tidak ada di stok!", null, "alert"); return; } let actualQty = isKasirGrosir && fb.isi > 1 ? qInput * fb.isi : qInput; let baseHargaE = fb.hargaE; let baseHargaG = fb.hargaG; if (isKasirGrosir) { if (pInput !== fb.hargaG && pInput > 0) { baseHargaG = pInput; baseHargaE = fb.isi > 0 ? pInput / fb.isi : 0; } } else { if (pInput !== fb.hargaE && pInput > 0) { baseHargaE = pInput; baseHargaG = fb.isi > 0 ? pInput * fb.isi : 0; } } let inC = cart.find(x => x.nama.toUpperCase() === n.toUpperCase() && x.sup === fbSup.nama && x.hargaE === baseHargaE && x.hargaG === baseHargaG); let totalInCart = cart.filter(x => x.nama.toUpperCase() === n.toUpperCase() && x.sup === fbSup.nama).reduce((sum, item) => sum + item.qty, 0); if ((totalInCart + actualQty) > fb.stok) { openModal("KURANG", "", `Sisa stok: ${fb.stok}`, null, "alert"); return; } if (inC) { inC.qty += actualQty; } else { cart.push({ nama: n, sup: fbSup.nama, hargaE: baseHargaE, hargaG: baseHargaG, qty: actualQty, sK: fb.sK, sB: fb.sB, isi: fb.isi }); } clearKasir(); saveData(); renderCart(); refreshDL(); }
+        function tambahItem() { 
+            const n = document.getElementById('k-nama').value.trim(); 
+            let qInput = Math.abs(parseFloat(document.getElementById('k-qty').value)) || 1; 
+            let pInput = clean(document.getElementById('k-harga').value); 
+            
+            if (!n || pInput <= 0) { openModal("GAGAL", "", "Barang dan Harga harus diisi dengan benar!", null, "alert"); return; }
+            
+            let fb = null; let fbSup = null; 
+            if (selKasirSup) { let s = db.supplier.find(x => x.nama === selKasirSup); if (s) { fb = s.barang.find(b => b.nama.toUpperCase() === n.toUpperCase()); fbSup = s; } } 
+            if (!fb) { db.supplier.forEach(s => s.barang.forEach(b => { if (b.nama.toUpperCase() === n.toUpperCase()) { fb = b; fbSup = s; } })); } 
+            if (!fb) { openModal("TIDAK ADA", "", "Barang tidak terdaftar!", null, "alert"); return; } 
+            if (fb.stok <= 0) { openModal("KOSONG", "", "Barang tidak ada di stok!", null, "alert"); return; } 
+            
+            let actualQty = isKasirGrosir && fb.isi > 1 ? qInput * fb.isi : qInput; 
+            let baseHargaE = fb.hargaE; let baseHargaG = fb.hargaG; 
+            if (isKasirGrosir) { if (pInput !== fb.hargaG && pInput > 0) { baseHargaG = pInput; baseHargaE = fb.isi > 0 ? pInput / fb.isi : 0; } } 
+            else { if (pInput !== fb.hargaE && pInput > 0) { baseHargaE = pInput; baseHargaG = fb.isi > 0 ? pInput * fb.isi : 0; } } 
+            
+            let inC = cart.find(x => x.nama.toUpperCase() === n.toUpperCase() && x.sup === fbSup.nama && x.hargaE === baseHargaE && x.hargaG === baseHargaG); 
+            let totalInCart = cart.filter(x => x.nama.toUpperCase() === n.toUpperCase() && x.sup === fbSup.nama).reduce((sum, item) => sum + item.qty, 0); 
+            
+            if ((totalInCart + actualQty) > fb.stok) { openModal("KURANG", "", `Sisa stok: ${fb.stok}`, null, "alert"); return; } 
+            
+            if (inC) { inC.qty += actualQty; } 
+            else { cart.push({ nama: n, sup: fbSup.nama, hargaE: baseHargaE, hargaG: baseHargaG, qty: actualQty, sK: fb.sK, sB: fb.sB, isi: fb.isi }); } 
+            
+            clearKasir(); saveData(); renderCart(); refreshDL(); 
+        }
+        
         function ubahQty(idx, delta) { let it = cart[idx]; let ts = 0; let supObj = db.supplier.find(s => s.nama === it.sup); if(supObj) { let b = supObj.barang.find(x => x.nama.toUpperCase() === it.nama.toUpperCase()); if(b) ts = b.stok; } let currentTotalInCart = cart.filter((x, i) => i !== idx && x.nama.toUpperCase() === it.nama.toUpperCase() && x.sup === it.sup).reduce((sum, item) => sum + item.qty, 0); if (it.qty + delta <= 0) cart.splice(idx, 1); else if ((currentTotalInCart + it.qty + delta) > ts) openModal("LIMIT", "", `Stok maksimal: ${ts}`, null, "alert"); else it.qty += delta; saveData(); renderCart(); refreshDL(); }
 
         function renderCart() { const l = document.getElementById('list-cart'); l.innerHTML = ""; let tot = 0; cart.forEach((k, i) => { let sub = 0; let dTxt = ""; let hTxt = ""; if (k.isi > 1 && k.sB && k.qty >= k.isi) { let b = Math.floor(k.qty / k.isi); let e = k.qty % k.isi; let hG = k.hargaG > 0 ? k.hargaG : (k.isi * k.hargaE); sub = (b * hG) + (e * k.hargaE); let dArr = []; if (b > 0) dArr.push(`${b} ${k.sB}`); if (e > 0) dArr.push(`${e.toFixed(2).replace(/\.00$/, "")} ${k.sK || 'satuan'}`); dTxt = dArr.join(' '); hTxt = `@ ${k.hargaG > 0 ? 'G:' + k.hargaG.toLocaleString('id-ID') : ''} ${k.hargaE > 0 ? 'S:' + k.hargaE.toLocaleString('id-ID') : ''}`; } else { sub = k.qty * k.hargaE; dTxt = `${k.qty} ${k.sK || 'satuan'}`; hTxt = `@ Rp ${k.hargaE.toLocaleString('id-ID')}`; } tot += sub; l.innerHTML += `<div class="bg-[#1e1f22] p-3 rounded-xl flex items-center justify-between border border-[#2b2d31] shadow-sm relative overflow-hidden"><div class="absolute left-0 top-0 bottom-0 w-1 bg-[#3b82f6]"></div><div class="pl-2 flex-1"><h4 class="text-xs font-black text-white uppercase leading-tight mb-1">${escapeHTML(k.nama)}</h4><div class="flex items-center text-[10px] font-bold text-white gap-2 mt-1"><div class="flex items-center bg-[#2b2d31] border border-[#ff0000] rounded"><button onclick="ubahQty(${i},-1)" class="w-11 h-11 flex items-center justify-center text-[#ff0000] font-bold text-xl active:scale-90 transition">-</button><span onclick="promptQty(${i})" class="px-3 font-black text-[#3b82f6] text-sm whitespace-nowrap active:scale-90 transition cursor-pointer">${dTxt}</span><button onclick="ubahQty(${i},1)" class="w-11 h-11 flex items-center justify-center text-[#ff0000] font-bold text-xl active:scale-90 transition">+</button></div><span class="text-[#6b7280]">${hTxt}</span></div></div><div class="text-right flex flex-col items-end gap-1"><span class="text-white font-black text-[13px]">${sub.toLocaleString('id-ID')}</span><button onclick="cart.splice(${i},1);saveData();renderCart();" class="text-[#ff0000] text-[8px] uppercase font-black bg-[#2b2d31] px-2 py-1 rounded border border-[#ff0000]">Hapus</button></div></div>`; }); document.getElementById('t-total').innerText = "Rp " + tot.toLocaleString('id-ID'); updateChange(); }
@@ -310,7 +354,10 @@
             cart.forEach(ic => { let sisa = ic.qty; let supObj = db.supplier.find(s => s.nama === ic.sup); if (supObj) { let br = supObj.barang.find(brx => brx.nama.toUpperCase() === ic.nama.toUpperCase()); if (br && sisa > 0) { if (br.stok >= sisa) { br.stok -= sisa; sisa = 0; } else { sisa -= br.stok; br.stok = 0; } } } });
             const trxId = Date.now();
             let hi = cart.map(k => { let sub = 0; let dt = ""; if (k.isi > 1 && k.sB && k.qty >= k.isi) { let bcCount = Math.floor(k.qty / k.isi); let e = k.qty % k.isi; let hG = k.hargaG > 0 ? k.hargaG : (k.isi * k.hargaE); sub = (bcCount * hG) + (e * k.hargaE); let prSB = k.sB ? (printMap[k.sB.toLowerCase()] || k.sB) : ''; let prSK = k.sK ? (printMap[k.sK.toLowerCase()] || k.sK) : ''; dt = `${bcCount} ${prSB}` + (e > 0 ? ` ${e.toFixed(2).replace(/\.00$/, "")}${prSK}` : ''); } else { let prSK = k.sK ? (printMap[k.sK.toLowerCase()] || k.sK) : ''; sub = k.qty * k.hargaE; dt = `${k.qty}${prSK}`; } return { nama: k.nama, displayTxt: dt, subTotal: sub }; });
-            db.history.unshift({ id: trxId, waktu: `${getTglStr()}-${getJamStr()}`, items: hi, total: t, bayar: b, kembali: b-t }); if (db.history.length > 500) db.history.pop();
+            db.history.unshift({ id: trxId, waktu: `${getTglStr()}-${getJamStr()}`, items: hi, total: t, bayar: b, kembali: b-t }); 
+            
+            if (db.history.length > 500) db.history.pop();
+            
             let trxCurrent = db.history.find(x => x.id === trxId); if (tipe === 'print') cetakStruk(trxCurrent); else if (tipe === 'wa') waStruk(trxCurrent);
             cart = []; document.getElementById('i-bayar').value = ""; saveData(); renderCart(); refreshDL(); uploadCloud(true); 
         }
@@ -337,8 +384,23 @@
         function openModalReturType(sIdx, bIdx) { closeSheet(); activeReturItem = { s: sIdx, b: bIdx }; activeReturType = null; document.getElementById('mr-nama-brg').innerText = db.supplier[sIdx].barang[bIdx].nama; document.getElementById('btn-retur-in').className = "w-full p-3 rounded-xl font-bold uppercase text-[11px] border border-[#4b5563] text-[#6b7280] bg-[#2b2d31] transition"; document.getElementById('btn-retur-out').className = "w-full p-3 rounded-xl font-bold uppercase text-[11px] border border-[#4b5563] text-[#6b7280] bg-[#2b2d31] transition"; document.getElementById('modal-retur-step1').style.display = 'flex'; }
         function selectReturType(type) { activeReturType = type; document.getElementById('btn-retur-in').className = type === 'in' ? "w-full p-3 rounded-xl font-bold uppercase text-[11px] border-2 border-[#facc15] text-[#facc15] bg-[#131314] transition shadow-lg" : "w-full p-3 rounded-xl font-bold uppercase text-[11px] border border-[#4b5563] text-[#6b7280] bg-[#2b2d31] transition"; document.getElementById('btn-retur-out').className = type === 'out' ? "w-full p-3 rounded-xl font-bold uppercase text-[11px] border-2 border-[#facc15] text-[#facc15] bg-[#131314] transition shadow-lg" : "w-full p-3 rounded-xl font-bold uppercase text-[11px] border border-[#4b5563] text-[#6b7280] bg-[#2b2d31] transition"; }
         
-        // BUG FIX RETUR: Menambahkan Date.now() sebagai ID Anti-Dobel
-        function confirmReturStep1() { if(!activeReturType) { openModal("PILIH JENIS", "", "Pilih salah satu jenis retur!", null, "alert"); return; } document.getElementById('modal-retur-step1').style.display = 'none'; const br = db.supplier[activeReturItem.s].barang[activeReturItem.b]; openModal(activeReturType === 'in' ? "RETUR DARI PEMBELI" : "RETUR KE SUPPLIER", 0, br.nama, (v) => { if(v <= 0) return; let sign = activeReturType === 'in' ? 1 : -1; if(activeReturType === 'out' && v > br.stok) { openModal("RETUR MELEBIHI STOK!", "", `Stok cuma sisa: ${br.stok}`, null, "alert"); return; } br.stok += (v * sign); let qs = formatStok(v, br.isi, br.sK, br.sB); db.retur.push({id: Date.now(), sup: db.supplier[activeReturItem.s].nama, nama: br.nama, qty: v, qtyStr: qs, type: activeReturType}); cart=[]; saveData(); }, "dual", "numeric", false, br, true); }
+        function confirmReturStep1() { 
+            if(!activeReturType) { openModal("PILIH JENIS", "", "Pilih salah satu jenis retur!", null, "alert"); return; } 
+            document.getElementById('modal-retur-step1').style.display = 'none'; 
+            const br = db.supplier[activeReturItem.s].barang[activeReturItem.b]; 
+            openModal(activeReturType === 'in' ? "RETUR DARI PEMBELI" : "RETUR KE SUPPLIER", 0, br.nama, (v) => { 
+                if(v <= 0) return; 
+                let sign = activeReturType === 'in' ? 1 : -1; 
+                if(activeReturType === 'out' && v > br.stok) { openModal("RETUR MELEBIHI STOK!", "", `Stok cuma sisa: ${br.stok}`, null, "alert"); return; } 
+                br.stok += (v * sign); 
+                let qs = formatStok(v, br.isi, br.sK, br.sB); 
+                db.retur.push({id: Date.now(), sup: db.supplier[activeReturItem.s].nama, nama: br.nama, qty: v, qtyStr: qs, type: activeReturType}); 
+                
+                if (db.retur.length > 100) db.retur.shift(); 
+                
+                cart=[]; saveData(); 
+            }, "dual", "numeric", false, br, true); 
+        }
         
         function backToStep1() { document.getElementById('b-modal').style.display = 'none'; document.getElementById('modal-retur-step1').style.display = 'flex'; } function konfirmasiDownload() { openModal("PERINGATAN!", "", "DATA STOK AKAN MENIMPA", () => downloadCloud(), "danger_confirm"); } function editSupplier(i) { closeSheet(); let on = db.supplier[i].nama; openModal("EDIT SUPPLIER", on, "", (v) => { let n = v.trim(); if (!n) return; db.supplier[i].nama = n; saveData(); }, "prompt"); } function openModalSup() { openModal("TAMBAH SUPPLIER", "", "", (v) => { if(v.trim()) { db.supplier.unshift({nama:v.trim(), barang:[]}); saveData(); renderStok(curTab); } }, "prompt"); } function delSup(n) { closeSheet(); openModal("HAPUS?", "", `Hapus Supplier ${n}?`, () => { db.supplier=db.supplier.filter(x=>x.nama!==n); db.retur=db.retur.filter(x=>x.sup!==n); saveData(); }, "confirm"); }
         function addB(i) { const n = document.getElementById(`ib-n-${i}`).value.trim(), bce = document.getElementById(`ib-bce-${i}`).value.trim(), bcg = document.getElementById(`ib-bcg-${i}`).value.trim(); const he = clean(document.getElementById(`ib-he-${i}`).value), hg = clean(document.getElementById(`ib-hg-${i}`).value); const sk = document.getElementById(`ib-sk-${i}`).value, sb = document.getElementById(`ib-sb-${i}`).value, isi = Math.abs(parseInt(document.getElementById(`ib-isi-${i}`).value)) || 0; const se = Math.abs(parseFloat(document.getElementById(`ib-st-k-${i}`).value)) || 0, sg = Math.abs(parseFloat(document.getElementById(`ib-st-b-${i}`).value)) || 0, st = (sg * (isi || 0)) + se; if(!n || (he <= 0 && hg <= 0)) { openModal("GAGAL", "", "Nama dan minimal 1 Harga harus diisi!", null, "alert"); return; } if(sb !== "" && sg > 0 && isi <= 0) { openModal("GAGAL", "", "Isi Per Grosir belum diatur (Pilih ulang grosirnya)", null, "alert"); return; } db.supplier[i].barang.unshift({ nama:n, bcE:bce, bcG:bcg, hargaE:he, hargaG:hg, stok:st, sK:sk, sB:sb, isi:isi }); saveData(); renderStok('sup'); }
@@ -360,6 +422,13 @@
         function waR(sn) { let h = `*RETUR famBARLA*\nSupplier: ${sn}\n-------------------\n`; db.retur.filter(x=>x.sup===sn).forEach(r=> h += `• ${r.nama}: ${r.type==='in'?'+':'-'}${r.qtyStr}\n`); window.open(`https://wa.me/?text=${encodeURIComponent(h)}`); }
         function waO(i) { let s=db.supplier[i], h = `*ORDER famBARLA*\nSupplier: ${s.nama}\n-------------------\n`; s.barang.filter(b=>{ if(b.sB && b.isi > 0) { let krt = Math.floor(b.stok / b.isi); return krt <= getMinLimit(b.sB); } else { return b.stok <= getMinLimit(b.sK); }}).forEach(b=> h += `• ${b.nama}: (Sisa ${formatStok(b.stok, b.isi, b.sK, b.sB)})\n`); window.open(`https://wa.me/?text=${encodeURIComponent(h)}`); }
         function trHR(sn) { openModal("HAPUS?", "", `Hapus data retur ${sn}?`, () => { db.retur=db.retur.filter(x=>x.sup!==sn); saveData(); renderStok('retur'); }, "confirm"); }
+        
+        // === SENSOR INTERNET OTOMATIS ===
+        window.addEventListener('online', () => {
+            if (unuploadedData) {
+                uploadCloud(true); 
+            }
+        });
     </script>
 </body>
 </html>

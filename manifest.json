@@ -1,6 +1,6 @@
 {
-  "name": "STORE famBARLA v1.0",
-  "short_name": "famBARLA v1.0",
+  "name": "store famBARLA",
+  "short_name": "KasirKU",
   "description": "Aplikasi Kasir Toko Kelontong famBARLA",
   "start_url": "./index.html",
   "display": "standalone",

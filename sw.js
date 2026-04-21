@@ -1,10 +1,9 @@
 /**
- * SERVICE WORKER STORE famBARLA (KASIR VERSION v1.0)
- * Architecture: Clean Cache-Key (Anti-Leak), Strict Install (Anti-False Shell),
- * Network-First (Anti-Captive Portal), & Aggressive Memory Trimmer.
+ * SERVICE WORKER store famBARLA
+ * Architecture: Clean Cache-Key, Strict Install, Network-First, & Aggressive Memory Trimmer.
  */
 
-const APP_VERSION = '1.1'; 
+const APP_VERSION = '1.2'; 
 
 const CACHE_CORE = 'fambarla-core-v' + APP_VERSION; 
 const CACHE_DYNAMIC = 'fambarla-dynamic-v' + APP_VERSION;

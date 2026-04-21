@@ -1,7 +1,7 @@
 {
   "name": "store famBARLA",
   "short_name": "KasirKU",
-  "description": "Aplikasi Kasir Toko Kelontong famBARLA",
+  "description": "Aplikasi store famBARLA",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#131314",

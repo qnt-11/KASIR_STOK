@@ -347,6 +347,8 @@
         let isKasirGrosir = false, selKasirSup = null, activeReturType = null, activeReturItem = null, curDropdownOpen = null, activeDropdownCallback = null;
         let unuploadedData = false; 
         let lastBackupDate = ""; 
+        let isUploading = false; // TAMBAHAN BUG FIX
+        let dataChangedDuringUpload = false; // TAMBAHAN BUG FIX
         let isProcessingCheckout = false; 
         let activeModalId = null;
         let currentMainMode = 'kasir';
@@ -405,6 +407,8 @@
                     localStorage.setItem('BARLA_UNSYNC', '1');
                     unuploadedData = true; 
                     document.getElementById('sync-indicator').style.display = 'block'; 
+                    // JIKA ADA PERUBAHAN SAAT SEDANG UPLOAD, CATAT!
+                    if (isUploading) dataChangedDuringUpload = true;
                 }
 
                 refreshDL(); 
@@ -727,31 +731,48 @@
         function addB(i) { const n = document.getElementById(`ib-n-${i}`).value.trim(), bce = document.getElementById(`ib-bce-${i}`).value.trim(), bcg = document.getElementById(`ib-bcg-${i}`).value.trim(); const he = clean(document.getElementById(`ib-he-${i}`).value), hg = clean(document.getElementById(`ib-hg-${i}`).value); const sk = document.getElementById(`ib-sk-${i}`).value, sb = document.getElementById(`ib-sb-${i}`).value, isi = Math.abs(parseInt(document.getElementById(`ib-isi-${i}`).value)) || 0; const se = Math.max(0, parseFloat(document.getElementById(`ib-st-k-${i}`).value.replace(/,/g, '.'))) || 0, sg = Math.max(0, parseFloat(document.getElementById(`ib-st-b-${i}`).value.replace(/,/g, '.'))) || 0, st = (sg * (isi || 0)) + se; if(!n || (he <= 0 && hg <= 0)) { openModal("GAGAL", "", "Nama dan minimal 1 Harga harus diisi!", null, "alert"); return; } if(sb !== "" && hg > 0 && isi <= 0) { openModal("GAGAL", "", "Isi Per Grosir belum diatur (Pilih ulang grosirnya)", null, "alert"); return; } db.supplier[i].barang.unshift({ nama:n, bcE:bce, bcG:bcg, hargaE:he, hargaG:hg, stok:st, sK:sk, sB:sb, isi:isi }); saveData(); renderStok('sup'); }
 
         async function uploadCloud(silent = false) { 
+            if (isUploading) return;
+            
             if(!silent) openModal("UPLOADING", "", "Mengirim data ke Cloud...", null, "cloud"); 
+            
+            isUploading = true;
+            dataChangedDuringUpload = false;
+            
             try { 
+                const historyToUpload = db.history.filter(h => !h.isUploaded);
+                const returToUpload = db.retur.filter(r => !r.isUploaded);
+                const historyIdsSent = historyToUpload.map(h => h.id);
+                const returIdsSent = returToUpload.map(r => r.id);
+
                 const payload = {
                     supplier: db.supplier,
-                    retur: db.retur.filter(r => !r.isUploaded),
-                    history: db.history.filter(h => !h.isUploaded)
+                    retur: returToUpload,
+                    history: historyToUpload
                 };
+                
                 const res = await fetch(CLOUD_URL, { method: 'POST', redirect: "follow", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) }); 
+                
                 if(res.ok) { 
                     const resText = await res.text(); 
                     if(!resText.includes("Error") && !resText.includes("<html")) { 
-                        db.history.forEach(h => h.isUploaded = true);
-                        db.retur.forEach(r => r.isUploaded = true);
+                        db.history.forEach(h => { if(historyIdsSent.includes(h.id)) h.isUploaded = true; });
+                        db.retur.forEach(r => { if(returIdsSent.includes(r.id)) r.isUploaded = true; });
                         
-                        unuploadedData = false; 
+                        if (!dataChangedDuringUpload) {
+                            unuploadedData = false; 
+                            localStorage.removeItem('BARLA_UNSYNC'); 
+                            document.getElementById('sync-indicator').style.display = 'none'; 
+                        }
+                        
                         saveData(true); 
-                        localStorage.removeItem('BARLA_UNSYNC'); 
-                        document.getElementById('sync-indicator').style.display = 'none'; 
-                        
                         if(!silent) openModal("SUKSES", "", "Upload berhasil!", null, "alert"); 
                     } else throw new Error(); 
                 } else throw new Error(); 
             } catch(e) { 
                 if(!silent) openModal("GAGAL", "", "Gagal kirim data ke Cloud.", null, "alert"); 
-            } 
+            } finally {
+                isUploading = false;
+            }
         }
 
         async function downloadCloud() { 

@@ -4,7 +4,7 @@
  * Advanced Feature: In-App Update Manager & Safe URL Matching
  */
 
-const APP_VERSION = '1.5'; // Ganti angka ini setiap kali kamu merubah index.html!
+const APP_VERSION = '1.6'; // Ganti angka ini setiap kali kamu merubah index.html!
 
 const CACHE_CORE = 'fambarla-core-v' + APP_VERSION; 
 const CACHE_DYNAMIC = 'fambarla-dynamic-v' + APP_VERSION;

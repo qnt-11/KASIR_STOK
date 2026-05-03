@@ -68,7 +68,6 @@
         input:not(.border-none) { background-color: var(--gemini-bg) !important; color: #ffffff !important; border: 1px solid #666666 !important; }
         input.border-none { background-color: transparent !important; color: #ffffff !important; border: none !important; outline: none !important; }
         
-        /* PEMBARUAN: Efek "Menyala Putih" pada kolom aktif/terisi teks */
         input:not(.border-none):not(:placeholder-shown) { border-color: #ffffff !important; }
         .scan-wrapper:has(input:not(:placeholder-shown)) { border-color: #ffffff !important; }
 
@@ -412,10 +411,9 @@
     </div>
 
     <div id="areaStruk" class="hidden"><div id="p-konten"></div></div>
-
     <script>
         const KEY = 'STORE_FAM_BARLA_V1_0';
-        const CLOUD_URL = "https://script.google.com/macros/s/AKfycbyoGnLfjPrTnR9vcm8LHe8ghAWpVjCTY-fFC-x6Z537h2Ic89d_s5hsf-RQBm0qvnIjGQ/exec"; 
+        const CLOUD_URL = "https://script.google.com/macros/s/AKfycbyCrprOaeRglO8avveH6SzUFwyggjuWW-Z52PuUE4kDke4wKIdSIu_qKaR11DEzygelXg/exec"; 
 
         let db = { supplier: [], retur: [], history: [] }; 
         let cart = []; 
@@ -446,6 +444,24 @@
             'pcs':'Pcs', 'bungkus':'Bks', 'renceng':'Rcg', 'sachet':'Sch', 'strip':'Stp', 'botol':'Btl', 'cup':'Cup', 
             'kaleng':'Klg', 'liter':'Ltr', 'kg':'Kg', 'gram':'Gr', 'lembar':'Lbr', 'roll':'Rol' 
         };
+
+        // --- FUNGSI HELPER AKUNTANSI & MATEMATIKA (PERBAIKAN AUDIT) ---
+        function hitungSubtotalItem(k) {
+            let isGrosirMode = (k.mode === 'grosir' && k.isi > 1);
+            if (isGrosirMode) {
+                let h1Grosir = k.hargaG > 0 ? k.hargaG : (k.isi * k.hargaE);
+                // Perkalian sebelum pembagian untuk presisi desimal
+                return Math.round((k.qty * h1Grosir) / k.isi);
+            } else {
+                return Math.round(k.qty * k.hargaE);
+            }
+        }
+
+        function isStokHabis(qtyRequested, stokTersedia) {
+            // Toleransi presisi floating-point (epsilon) 0.0001
+            return (qtyRequested - stokTersedia) > 0.0001;
+        }
+        // -------------------------------------------------------------
 
         window.onload = () => { 
             try { 
@@ -520,7 +536,6 @@
             return str ? String(str).replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag])) : ""; 
         }
 
-        // PERBAIKAN 4: Amankan posisi kursor agar tidak loncat saat auto kapital
         function autoKapital(el) {
             let val = el.value; 
             if(!val) return;
@@ -528,9 +543,7 @@
             let start = el.selectionStart;
             let end = el.selectionEnd;
 
-            // Kapital huruf pertama setiap kata tanpa merusak spasi/tanda baca
             let formatted = val.replace(/(?:^|\s)\S/g, a => a.toUpperCase());
-            // Pengecualian kata khusus
             formatted = formatted.replace(/\b(pvc|sni|p\/c)\b/ig, m => m.toUpperCase());
 
             if (el.value !== formatted) {
@@ -1039,7 +1052,7 @@
             let inC = cart.find(x => x.nama.toUpperCase() === n.toUpperCase() && x.sup === fbSup.nama && x.hargaE === baseHargaE && x.hargaG === baseHargaG); 
             let totalInCart = cart.filter(x => x.nama.toUpperCase() === n.toUpperCase() && x.sup === fbSup.nama).reduce((sum, item) => sum + item.qty, 0); 
             
-            if (Math.round((totalInCart + actualQty) * 10000) / 10000 > Math.round(fb.stok * 10000) / 10000) { 
+            if (isStokHabis(totalInCart + actualQty, fb.stok)) { 
                 openModal("KURANG", "", `Sisa stok: ${fb.stok}`, null, "alert"); 
                 return; 
             } 
@@ -1075,7 +1088,7 @@
             
             if (Math.round((it.qty + actualDelta) * 10000) / 10000 <= 0) {
                 cart.splice(idx, 1); 
-            } else if (Math.round((currentTotalInCart + it.qty + actualDelta) * 10000) / 10000 > Math.round(ts * 10000) / 10000) { 
+            } else if (isStokHabis(currentTotalInCart + it.qty + actualDelta, ts)) { 
                 openModal("LIMIT", "", `Stok maksimal: ${ts}`, null, "alert"); 
                 return; 
             } else {
@@ -1102,7 +1115,7 @@
                     let nQ = Math.max(0, parseFloat(v)) || 0; 
                     if (nQ === 0) cart.splice(idx, 1); 
                     else { 
-                        if (Math.round((currentTotalInCart + nQ) * 10000) / 10000 > Math.round(fb.stok * 10000) / 10000) { openModal("KURANG", "", `Sisa: ${fb.stok - currentTotalInCart}`, null, "alert"); return; } 
+                        if (isStokHabis(currentTotalInCart + nQ, fb.stok)) { openModal("KURANG", "", `Sisa: ${fb.stok - currentTotalInCart}`, null, "alert"); return; } 
                         it.qty = Math.round(nQ * 10000) / 10000; 
                         if (it.qty < it.isi && it.mode === 'grosir') it.mode = 'satuan';
                         if (it.qty >= it.isi && it.mode === 'satuan') it.mode = 'grosir';
@@ -1114,7 +1127,7 @@
                     let nQ = Math.max(0, parseFloat(String(v).replace(/,/g, '.'))) || 0; 
                     if (nQ === 0) cart.splice(idx, 1); 
                     else { 
-                        if (Math.round((currentTotalInCart + nQ) * 10000) / 10000 > Math.round(fb.stok * 10000) / 10000) { openModal("KURANG", "", `Sisa: ${fb.stok - currentTotalInCart}`, null, "alert"); return; } 
+                        if (isStokHabis(currentTotalInCart + nQ, fb.stok)) { openModal("KURANG", "", `Sisa: ${fb.stok - currentTotalInCart}`, null, "alert"); return; } 
                         it.qty = Math.round(nQ * 10000) / 10000; 
                         if (it.qty < it.isi && it.mode === 'grosir') it.mode = 'satuan';
                         if (it.qty >= it.isi && it.mode === 'satuan') it.mode = 'grosir';
@@ -1138,13 +1151,12 @@
             let tot = 0; 
             
             cart.forEach((k, i) => { 
-                let sub = 0, dTxt = "", hTxt = ""; 
+                let sub = hitungSubtotalItem(k); // Sentralisasi hitungan matematis
+                let dTxt = "", hTxt = ""; 
                 let isGrosirMode = (k.mode === 'grosir' && k.isi > 1);
 
                 if (isGrosirMode) {
                     let h1Grosir = k.hargaG > 0 ? k.hargaG : (k.isi * k.hargaE);
-                    let hPerPcs = h1Grosir / k.isi;
-                    sub = Math.round(k.qty * hPerPcs); 
                     
                     let b = Math.floor(k.qty / k.isi);
                     let e = Math.round((k.qty % k.isi) * 10000) / 10000;
@@ -1155,8 +1167,6 @@
                     
                     hTxt = `@ Rp ${h1Grosir.toLocaleString('id-ID')} / ${k.sB || 'Grosir'}`;
                 } else {
-                    sub = Math.round(k.qty * k.hargaE);
-                    
                     let b = Math.floor(k.qty / k.isi);
                     let e = Math.round((k.qty % k.isi) * 10000) / 10000;
                     let dArr = [];
@@ -1209,13 +1219,7 @@
         function updateChange() { 
             let t = 0; 
             cart.forEach(k => { 
-                let isGrosirMode = (k.mode === 'grosir' && k.isi > 1);
-                if (isGrosirMode) {
-                    let h1Grosir = k.hargaG > 0 ? k.hargaG : (k.isi * k.hargaE);
-                    t += Math.round(k.qty * (h1Grosir / k.isi));
-                } else {
-                    t += Math.round(k.qty * k.hargaE);
-                }
+                t += hitungSubtotalItem(k); // Sentralisasi hitungan matematis
             }); 
             
             const bs = document.getElementById('i-bayar').value;
@@ -1262,7 +1266,7 @@
                 let sObj = db.supplier.find(s => s.nama === sN); 
                 if (sObj) { 
                     let br = sObj.barang.find(b => b.nama.toUpperCase() === iN); 
-                    if (br && Math.round(cartTotals[key] * 10000) / 10000 > Math.round(br.stok * 10000) / 10000) { 
+                    if (br && isStokHabis(cartTotals[key], br.stok)) { 
                         outOfStock = true; 
                         oosMsg += `\n- ${br.nama} (Sisa: ${br.stok})`; 
                     } 
@@ -1276,18 +1280,13 @@
             
             let t = 0; 
             cart.forEach(k => { 
-                let isGrosirMode = (k.mode === 'grosir' && k.isi > 1);
-                if (isGrosirMode) {
-                    let h1Grosir = k.hargaG > 0 ? k.hargaG : (k.isi * k.hargaE);
-                    t += Math.round(k.qty * (h1Grosir / k.isi));
-                } else {
-                    t += Math.round(k.qty * k.hargaE);
-                }
+                t += hitungSubtotalItem(k); // Sentralisasi hitungan matematis
             }); 
             
             const b = clean(document.getElementById('i-bayar').value); 
-            if (cart.length === 0 || b < t || document.getElementById('i-bayar').value === "") { 
-                openModal("CEK LAGI", "", "Data belum lengkap/Bayar kurang.", null, "alert"); 
+            // Guard clause tambahan (Total harus lebih dari 0)
+            if (cart.length === 0 || t <= 0 || b < t || document.getElementById('i-bayar').value === "") { 
+                openModal("CEK LAGI", "", "Data belum lengkap, Total Harga 0, atau Bayar kurang.", null, "alert"); 
                 return; 
             }
             
@@ -1312,7 +1311,8 @@
             
             const trxId = Date.now();
             let hi = cart.map(k => { 
-                let sub = 0, dt = ""; 
+                let sub = hitungSubtotalItem(k); // Sentralisasi
+                let dt = ""; 
                 let isGrosirMode = (k.mode === 'grosir' && k.isi > 1);
 
                 let bcCount = Math.floor(k.qty / k.isi);
@@ -1321,15 +1321,11 @@
                 let prSK = k.sK ? (printMap[k.sK.toLowerCase()] || k.sK) : ''; 
 
                 if (isGrosirMode) { 
-                    let h1Grosir = k.hargaG > 0 ? k.hargaG : (k.isi * k.hargaE); 
-                    sub = Math.round(k.qty * (h1Grosir / k.isi)); 
-
                     dt = '';
                     if(bcCount > 0) dt += `${bcCount}${prSB} `;
                     if(e > 0) dt += `${parseFloat(e.toFixed(2))}${prSK}`;
                     dt = dt.trim();
                 } else { 
-                    sub = Math.round(k.qty * k.hargaE); 
                     if (k.isi > 1 && k.sB) {
                         dt = '';
                         if(bcCount > 0) dt += `${bcCount}${prSB} `;
@@ -1344,7 +1340,6 @@
             
             db.history.unshift({ id: trxId, waktu: `${getTglStr()}-${getJamStr()}`, items: hi, total: t, bayar: b, kembali: b-t, isUploaded: false }); 
             
-            // PERBAIKAN 1: Pemangkasan riwayat dilakukan dari bawah (transaksi terlama), melindungi transaksi hari ini
             while (db.history.length > 500) {
                 let uploadedIdx = -1;
                 for (let i = db.history.length - 1; i >= 0; i--) {
@@ -1521,7 +1516,6 @@
             let trx = db.history.find(x => x.id === id) || tempCloudHistory.find(x => x.id === id); 
             waStruk(trx); 
         }
-
         function openMenuModal() { 
             const bk = document.getElementById('btn-nav-kasir'), bs = document.getElementById('btn-nav-stok');
             if (currentMainMode === 'kasir') { 
@@ -1969,11 +1963,13 @@
                 
                 let qs = formatStok(v, br.isi, br.sK, br.sB); 
                 
-                // PERBAIKAN 2: Nominal retur dipecah ecer/grosir agar akurat
+                // PERBAIKAN LOGIKA AKUNTANSI RETUR (Proporsional Grosir & Ecer)
                 let nom = 0;
                 if (br.isi > 1 && br.sB && v >= br.isi) {
                     let h1Grosir = br.hargaG > 0 ? br.hargaG : (br.isi * br.hargaE);
-                    nom = Math.round(v * (h1Grosir / br.isi));
+                    let qtyGrosirPenuh = Math.floor(v / br.isi);
+                    let qtyEcerSisa = v % br.isi;
+                    nom = Math.round(qtyGrosirPenuh * h1Grosir) + Math.round(qtyEcerSisa * br.hargaE);
                 } else {
                     nom = Math.round(v * br.hargaE);
                 }
@@ -2150,17 +2146,14 @@
                 const res = await fetch(CLOUD_URL + "?action=loadStok", { redirect: "follow" }); 
                 const data = await res.json(); 
                 if(data && data.supplier) { 
-                    // PERBAIKAN 3: Mengamankan data lokal offline sebelum merge
                     let unuploadedHistory = db.history ? db.history.filter(h => !h.isUploaded) : [];
                     let unuploadedRetur = db.retur ? db.retur.filter(r => !r.isUploaded) : [];
                     
                     db = data; 
                     
-                    // Jahit data lokal offline ke posisi atas
                     db.history = (data.history && data.history.length > 0) ? [...unuploadedHistory, ...data.history] : [...unuploadedHistory];
                     db.retur = (data.retur && data.retur.length > 0) ? [...unuploadedRetur, ...data.retur] : [...unuploadedRetur];
                     
-                    // Hapus duplikat ID jika ada
                     db.history = db.history.filter((v, i, a) => a.findIndex(t => (t.id === v.id)) === i);
                     db.retur = db.retur.filter((v, i, a) => a.findIndex(t => (t.id === v.id)) === i);
 

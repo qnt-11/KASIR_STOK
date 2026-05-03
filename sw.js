@@ -1,6 +1,7 @@
 /**
  * SERVICE WORKER store famBARLA
  * Architecture: Network-First (HTML), Cache-First (CDN), Stale-While-Revalidate (Dynamic)
+ * Security & Stability: Enterprise Grade
  */
 
 const APP_VERSION = '2.5';
@@ -45,16 +46,14 @@ async function trimCache(cacheName, maxItems) {
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_CORE).then(cache => {
+      // [FIX]: Dilarang menelan error. Instalasi SW harus gagal jika file inti tidak tersedia.
       return Promise.all(coreUrls.map(async url => {
-        try {
-          const req = new Request(url, { cache: 'reload' });
-          const res = await fetch(req);
-          if (res && res.ok) {
-            await cache.put(req, res);
-          }
-        } catch (error) {
-          console.error('Gagal pre-cache:', url, error);
+        const req = new Request(url, { cache: 'reload' });
+        const res = await fetch(req);
+        if (!res || !res.ok) {
+          throw new Error(`Pre-cache gagal untuk file kritis: ${url}`);
         }
+        await cache.put(req, res);
       }));
     }).then(() => self.skipWaiting())
   );
@@ -64,7 +63,6 @@ self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys => {
       return Promise.all(keys.map(key => {
-        // Hapus cache lama kecuali Core baru, Dynamic baru, dan CDN persisten
         if (key.startsWith('fambarla-') && key !== CACHE_CORE && key !== CACHE_DYNAMIC && key !== CACHE_CDN) {
           return caches.delete(key);
         }
@@ -77,13 +75,11 @@ self.addEventListener('fetch', event => {
   const req = event.request;
   const url = new URL(req.url);
 
-  // Abaikan request API & request Non-GET
   if (req.method !== 'GET' || url.pathname.endsWith('sw.js') || url.hostname === 'script.google.com' || !url.protocol.startsWith('http')) {
     return;
   }
 
   // STRATEGI 1: Network-First (Inti Aplikasi: HTML & Manifest)
-  // Telah diperbaiki agar fleksibel meskipun di-hosting dalam sub-folder
   if (req.mode === 'navigate' || url.pathname.match(/\/(index\.html)?$/) || url.pathname.endsWith('manifest.json')) {
     event.respondWith(
       fetch(req).then(res => {
@@ -119,8 +115,8 @@ self.addEventListener('fetch', event => {
         if (cachedRes) return cachedRes; 
         
         return fetch(req).then(res => {
-          // Telah diperbaiki: Hanya cache status 200 untuk menghindari pembengkakan memori akibat Opaque Response (Status 0)
-          if (!res || res.status !== 200) return res;
+          // [FIX]: Mengizinkan res.type === 'opaque' (status 0) karena CDN seringkali dikirim tanpa CORS
+          if (!res || (res.status !== 200 && res.type !== 'opaque')) return res;
           
           const resClone = res.clone();
           caches.open(CACHE_CDN).then(cache => cache.put(req, resClone));
@@ -156,7 +152,6 @@ self.addEventListener('fetch', event => {
         else if (url.pathname.endsWith('.js')) headers.set('Content-Type', 'application/javascript');
         else if (url.pathname.match(/\.(png|jpg|jpeg|svg|gif)$/i)) {
           headers.set('Content-Type', 'image/svg+xml');
-          // Fallback offline SVG transparan 1x1
           return new Response('<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>', { status: 503, statusText: 'Offline', headers });
         }
         else headers.set('Content-Type', 'text/plain');
@@ -165,7 +160,6 @@ self.addEventListener('fetch', event => {
       });
 
       if (cachedRes) {
-        // Telah diperbaiki: Menelan error (catch kosong) agar console browser tetap bersih saat offline
         event.waitUntil(fetchPromise.catch(() => {}));
         return cachedRes;
       }

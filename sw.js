@@ -83,7 +83,8 @@ self.addEventListener('fetch', event => {
   }
 
   // STRATEGI 1: Network-First (Inti Aplikasi: HTML & Manifest)
-  if (req.mode === 'navigate' || url.pathname === '/' || url.pathname.endsWith('index.html') || url.pathname.endsWith('manifest.json')) {
+  // Telah diperbaiki agar fleksibel meskipun di-hosting dalam sub-folder
+  if (req.mode === 'navigate' || url.pathname.match(/\/(index\.html)?$/) || url.pathname.endsWith('manifest.json')) {
     event.respondWith(
       fetch(req).then(res => {
         if (!res || (res.status !== 200 && res.status !== 0 && res.type !== 'opaqueredirect')) {
@@ -118,7 +119,8 @@ self.addEventListener('fetch', event => {
         if (cachedRes) return cachedRes; 
         
         return fetch(req).then(res => {
-          if (!res || (res.status !== 200 && res.status !== 0)) return res;
+          // Telah diperbaiki: Hanya cache status 200 untuk menghindari pembengkakan memori akibat Opaque Response (Status 0)
+          if (!res || res.status !== 200) return res;
           
           const resClone = res.clone();
           caches.open(CACHE_CDN).then(cache => cache.put(req, resClone));
@@ -139,7 +141,6 @@ self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(req, { ignoreSearch: true }).then(cachedRes => {
       const fetchPromise = fetch(req).then(res => {
-        // PERBAIKAN: Hanya cache file status 200 untuk mencegah kebocoran memori Opaque
         if (res && res.status === 200) {
           const resClone = res.clone();
           caches.open(CACHE_DYNAMIC).then(cache => {
@@ -155,7 +156,7 @@ self.addEventListener('fetch', event => {
         else if (url.pathname.endsWith('.js')) headers.set('Content-Type', 'application/javascript');
         else if (url.pathname.match(/\.(png|jpg|jpeg|svg|gif)$/i)) {
           headers.set('Content-Type', 'image/svg+xml');
-          // PERBAIKAN: Berikan file SVG valid yang transparan (1x1) alih-alih string kosong
+          // Fallback offline SVG transparan 1x1
           return new Response('<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>', { status: 503, statusText: 'Offline', headers });
         }
         else headers.set('Content-Type', 'text/plain');
@@ -163,9 +164,9 @@ self.addEventListener('fetch', event => {
         return new Response('', { status: 503, statusText: 'Offline', headers });
       });
 
-      // PERBAIKAN: Pastikan background fetch tidak dibunuh browser jika cache sudah tampil
       if (cachedRes) {
-        event.waitUntil(fetchPromise);
+        // Telah diperbaiki: Menelan error (catch kosong) agar console browser tetap bersih saat offline
+        event.waitUntil(fetchPromise.catch(() => {}));
         return cachedRes;
       }
       

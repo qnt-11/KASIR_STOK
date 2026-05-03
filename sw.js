@@ -3,7 +3,7 @@
  * Architecture: Network-First (HTML), Cache-First (CDN), Stale-While-Revalidate (Dynamic)
  */
 
-const APP_VERSION = '2.0';
+const APP_VERSION = '2.5';
 
 const CACHE_CORE = 'fambarla-core-v' + APP_VERSION; 
 const CACHE_DYNAMIC = 'fambarla-dynamic-v' + APP_VERSION;
